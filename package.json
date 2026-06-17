@@ -1,6 +1,6 @@
 {
   "name": "musically",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Framework-agnostic UI toolkit for creating, editing, and displaying chord-over-lyric song sheets, with switchable chord diagrams for piano, guitar, and ukulele.",
   "type": "module",
   "license": "MIT",
