@@ -1,17 +1,80 @@
 {
   "name": "musically",
-  "version": "1.0.5",
-  "description": "The Complete Coding Solution For Your Musical Needs",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "version": "1.0.0",
+  "description": "Framework-agnostic UI toolkit for creating, editing, and displaying chord-over-lyric song sheets, with switchable chord diagrams for piano, guitar, and ukulele.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Jefin George",
+  "homepage": "https://github.com/JefinGeorge/Musically#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JefinGeorge/Musically.git"
+  },
+  "bugs": {
+    "url": "https://github.com/JefinGeorge/Musically/issues"
   },
   "keywords": [
-    "Music",
-    "Musically",
-    "Guitar",
-    "Chords"
+    "chords",
+    "chord-chart",
+    "chordpro",
+    "music",
+    "music-theory",
+    "sheet-music",
+    "transpose",
+    "guitar",
+    "ukulele",
+    "piano",
+    "web-components",
+    "lit",
+    "react",
+    "angular"
   ],
-  "author": "Jefin George Jose",
-  "license": "ISC"
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./elements": {
+      "types": "./dist/elements.d.ts",
+      "import": "./dist/elements.js",
+      "require": "./dist/elements.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": [
+    "./dist/elements.js",
+    "./dist/elements.cjs"
+  ],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "dev": "tsup --watch",
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "lit": "^3.2.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
 }
