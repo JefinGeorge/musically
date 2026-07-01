@@ -372,22 +372,25 @@ export class ChordSheet extends LitElement {
     .block[data-section] .section {
       margin-top: 0;
     }
+    /* Default web look: a coloured left-border cue only — no background fill, so lyric/chord text
+       stays fully readable. Apps still get the section type via [data-section] to colour as they
+       wish, and a faint fill can be opted into with --musically-section-fill (e.g. 8%). */
     .block[data-section="chorus"] {
       border-left-color: var(--musically-accent, #1d4ed8);
-      background: color-mix(in srgb, var(--musically-accent, #1d4ed8) 8%, transparent);
+      background: color-mix(in srgb, var(--musically-accent, #1d4ed8) var(--musically-section-fill, 0%), transparent);
     }
     .block[data-section="pre-chorus"] {
       border-left-color: var(--musically-section-prechorus, #b8791b);
-      background: color-mix(in srgb, var(--musically-section-prechorus, #b8791b) 8%, transparent);
+      background: color-mix(in srgb, var(--musically-section-prechorus, #b8791b) var(--musically-section-fill, 0%), transparent);
     }
     .block[data-section="bridge"] {
       border-left-color: var(--musically-section-bridge, #7c3aed);
-      background: color-mix(in srgb, var(--musically-section-bridge, #7c3aed) 8%, transparent);
+      background: color-mix(in srgb, var(--musically-section-bridge, #7c3aed) var(--musically-section-fill, 0%), transparent);
     }
     .block[data-section="intro"],
     .block[data-section="outro"] {
       border-left-color: var(--musically-muted, #8a8169);
-      background: color-mix(in srgb, var(--musically-muted, #8a8169) 7%, transparent);
+      background: color-mix(in srgb, var(--musically-muted, #8a8169) var(--musically-section-fill, 0%), transparent);
     }
     .block[data-section="verse"] {
       border-left-color: color-mix(in srgb, var(--musically-text, #33312c) 25%, transparent);
