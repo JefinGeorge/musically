@@ -4,13 +4,15 @@
  * core in ./index. Importing this module registers both custom elements.
  *
  * Theme via CSS custom properties on the element or a parent:
- *   --musically-accent   chord / highlight color   (#1d4ed8)
- *   --musically-root     root-note highlight        (#1e3a8a)
- *   --musically-paper    sheet / white-key bg       (#fffdf8)
- *   --musically-text     lyric color                (#33312c)
- *   --musically-border   card / divider color       (#e4dcc8)
- *   --musically-muted    secondary text             (#8a8169)
- *   --musically-font     sheet font family
+ *   --musically-accent     chord / highlight color   (#1d4ed8)
+ *   --musically-on-accent  text on an accent fill     (#fff)
+ *   --musically-root       root-note highlight        (#1e3a8a)
+ *   --musically-paper      sheet / white-key bg       (#fffdf8)
+ *   --musically-text       lyric color                (#33312c)
+ *   --musically-border     card / divider color       (#e4dcc8)
+ *   --musically-muted      secondary text             (#8a8169)
+ *   --musically-shadow     sheet box-shadow
+ *   --musically-font       sheet font family
  */
 
 import { LitElement, html, css, nothing } from "lit";
@@ -154,10 +156,13 @@ export class ChordSheet extends LitElement {
       cursor: pointer;
       text-transform: capitalize;
     }
+    button:hover {
+      border-color: var(--musically-accent, #1d4ed8);
+    }
     button.active {
       background: var(--musically-accent, #1d4ed8);
       border-color: var(--musically-accent, #1d4ed8);
-      color: #fff;
+      color: var(--musically-on-accent, #fff);
       font-weight: 600;
     }
     button.step {
@@ -196,31 +201,33 @@ export class ChordSheet extends LitElement {
     .sheet {
       background: var(--musically-paper, #fffdf8);
       border: 1px solid var(--musically-border, #e4dcc8);
-      border-radius: 10px;
-      padding: 26px 30px;
-      box-shadow: 0 1px 3px rgba(80, 70, 40, 0.08);
+      border-radius: 14px;
+      padding: 28px 32px;
+      box-shadow: var(--musically-shadow, 0 1px 2px rgba(80, 70, 40, 0.05), 0 6px 20px -10px rgba(80, 70, 40, 0.12));
     }
     .header {
       border-bottom: 1px solid var(--musically-border, #ece3cf);
-      padding-bottom: 12px;
-      margin-bottom: 18px;
+      padding-bottom: 14px;
+      margin-bottom: 20px;
     }
     .header .title {
-      font-size: 22px;
+      font-size: 24px;
       font-weight: 700;
+      letter-spacing: -0.02em;
     }
     .header .meta {
       font-size: 13px;
       color: var(--musically-muted, #8a8169);
-      margin-top: 2px;
+      margin-top: 4px;
     }
     .section {
       font-weight: 700;
       color: var(--musically-accent, #1d4ed8);
-      font-size: 13px;
-      letter-spacing: 1px;
+      font-size: 12px;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      margin: 18px 0 6px;
+      margin: 22px 0 8px;
+      opacity: 0.9;
     }
     .section:first-child {
       margin-top: 0;
@@ -229,8 +236,8 @@ export class ChordSheet extends LitElement {
       height: 12px;
     }
     .line {
-      margin-bottom: 10px;
-      line-height: 1.1;
+      margin-bottom: 12px;
+      line-height: 1.15;
     }
     .seg {
       display: inline-flex;
@@ -241,13 +248,15 @@ export class ChordSheet extends LitElement {
     .seg .chord {
       color: var(--musically-accent, #1d4ed8);
       font-weight: 700;
-      font-size: 12.5px;
-      height: 1.4em;
+      font-size: 13px;
+      letter-spacing: -0.01em;
+      height: 1.45em;
       white-space: pre;
     }
     .seg .lyric {
       white-space: pre;
-      font-size: 16px;
+      font-size: 16.5px;
+      line-height: 1.5;
     }
     .diagrams {
       margin-top: 18px;
