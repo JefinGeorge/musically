@@ -576,13 +576,20 @@ exports.ChordSheet.styles = lit.css`
       border: none;
       border-bottom: 2px solid transparent;
       background: none;
-      color: var(--musically-muted, #8a8169);
+      /* Use the real text colour (dimmed) rather than the faint muted colour, so labels stay
+         readable in light and dark. */
+      color: var(--musically-text, #33312c);
+      opacity: 0.65;
       cursor: pointer;
       margin-bottom: -1px;
+    }
+    .tab:hover {
+      opacity: 1;
     }
     .tab.active {
       color: var(--musically-accent, #1d4ed8);
       border-bottom-color: var(--musically-accent, #1d4ed8);
+      opacity: 1;
     }
 
     /* Section colour blocks (also readable by mobile via data-section) */
