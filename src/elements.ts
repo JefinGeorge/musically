@@ -361,9 +361,12 @@ export class ChordSheet extends LitElement {
       opacity: 1;
     }
     .tab.active {
-      /* Keep the label in the readable text colour; the accent underline signals "selected"
-         (accent-as-text contrast is unreliable across themes). */
+      /* Keep the label in the readable text colour; the accent underline signals "selected".
+         `background: none` is required to beat the generic `button.active` (accent fill) rule —
+         otherwise the active tab gets dark text on a blue fill. */
+      background: none;
       color: var(--musically-text, #33312c);
+      border-color: transparent;
       border-bottom-color: var(--musically-accent, #1d4ed8);
       opacity: 1;
     }
