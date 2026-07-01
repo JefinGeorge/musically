@@ -16,7 +16,7 @@
  */
 
 import { LitElement, html, css, nothing } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import {
   parseChordPro,
@@ -24,8 +24,21 @@ import {
   chordNotes,
   getDiagramSVG,
   transposeNote,
+  SONG_KEYS,
 } from "./index.js";
-import type { Instrument, SheetLine } from "./index.js";
+import type { Instrument, SheetLine, SectionType } from "./index.js";
+
+/** A language option for the editor's dropdowns. */
+export interface LanguageOption {
+  code: string;
+  name: string;
+}
+
+/** An alternate-script version of the lyrics: its own language + ChordPro body. */
+export interface Transliteration {
+  language: string;
+  body: string;
+}
 
 /* ================================================================== */
 /* <chord-diagram>                                                    */
@@ -119,6 +132,17 @@ export class ChordSheet extends LitElement {
   @property({ type: Boolean, attribute: "show-diagrams" }) showDiagrams = true;
   /** Hide the editor + toolbar and render only the sheet. */
   @property({ type: Boolean }) readonly = false;
+  /** BCP-47 language of the primary lyrics (drives the language picker's value). */
+  @property() language = "";
+  /** Options for the language dropdowns. When empty the current value is still shown. */
+  @property({ attribute: false }) languages: LanguageOption[] = [];
+  /** Alternate-script versions of the lyrics, each with its own language + ChordPro body. */
+  @property({ attribute: false }) transliterations: Transliteration[] = [];
+
+  /** Which editor tab is active. */
+  @state() private tab: "editor" | "translit" | "chords" = "editor";
+  /** Which transliteration tab is active (index into transliterations). */
+  @state() private xlitTab = 0;
 
   static styles = css`
     :host {
@@ -275,6 +299,111 @@ export class ChordSheet extends LitElement {
         grid-template-columns: 1fr;
       }
     }
+
+    /* Header fields (title / language / key) */
+    .fields {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 12px;
+      color: var(--musically-muted, #8a8169);
+    }
+    .field.grow {
+      flex: 1;
+      min-width: 180px;
+    }
+    input.title-input,
+    select {
+      font: inherit;
+      font-size: 14px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--musically-border, #d8cfb8);
+      background: var(--musically-paper, #fffdf8);
+      color: var(--musically-text, #33312c);
+      outline: none;
+    }
+    input.title-input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--musically-accent, #1d4ed8);
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      border-bottom: 1px solid var(--musically-border, #e4dcc8);
+      margin-bottom: 16px;
+    }
+    .tab {
+      font: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 14px;
+      border: none;
+      border-bottom: 2px solid transparent;
+      background: none;
+      color: var(--musically-muted, #8a8169);
+      cursor: pointer;
+      margin-bottom: -1px;
+    }
+    .tab.active {
+      color: var(--musically-accent, #1d4ed8);
+      border-bottom-color: var(--musically-accent, #1d4ed8);
+    }
+
+    /* Section colour blocks (also readable by mobile via data-section) */
+    .block {
+      margin: 0 0 4px;
+    }
+    .block[data-section] {
+      padding: 8px 14px;
+      margin: 10px 0;
+      border-left: 3px solid transparent;
+      border-radius: 8px;
+    }
+    .block[data-section] .section {
+      margin-top: 0;
+    }
+    .block[data-section="chorus"] {
+      border-left-color: var(--musically-accent, #1d4ed8);
+      background: color-mix(in srgb, var(--musically-accent, #1d4ed8) 8%, transparent);
+    }
+    .block[data-section="pre-chorus"] {
+      border-left-color: var(--musically-section-prechorus, #b8791b);
+      background: color-mix(in srgb, var(--musically-section-prechorus, #b8791b) 8%, transparent);
+    }
+    .block[data-section="bridge"] {
+      border-left-color: var(--musically-section-bridge, #7c3aed);
+      background: color-mix(in srgb, var(--musically-section-bridge, #7c3aed) 8%, transparent);
+    }
+    .block[data-section="intro"],
+    .block[data-section="outro"] {
+      border-left-color: var(--musically-muted, #8a8169);
+      background: color-mix(in srgb, var(--musically-muted, #8a8169) 7%, transparent);
+    }
+    .block[data-section="verse"] {
+      border-left-color: color-mix(in srgb, var(--musically-text, #33312c) 25%, transparent);
+    }
+
+    .translit-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .empty {
+      color: var(--musically-muted, #8a8169);
+      font-size: 14px;
+      padding: 20px 0;
+    }
   `;
 
   private emitChange() {
@@ -284,8 +413,11 @@ export class ChordSheet extends LitElement {
           body: this.body,
           title: this.title,
           artist: this.artist,
+          language: this.language,
+          songKey: this.songKey,
           transpose: this.transpose,
           instrument: this.instrument,
+          transliterations: this.transliterations,
         },
         bubbles: true,
         composed: true,
@@ -308,6 +440,190 @@ export class ChordSheet extends LitElement {
     this.emitChange();
   }
 
+  // ── Transliterations ──────────────────────────────────────────────
+  private addTransliteration() {
+    const used = new Set(this.transliterations.map((t) => t.language));
+    const next = this.languages.find((l) => !used.has(l.code) && l.code !== this.language);
+    this.transliterations = [...this.transliterations, { language: next?.code ?? "", body: "" }];
+    this.xlitTab = this.transliterations.length - 1;
+    this.emitChange();
+  }
+  private updateTransliteration(i: number, patch: Partial<Transliteration>) {
+    this.transliterations = this.transliterations.map((t, idx) => (idx === i ? { ...t, ...patch } : t));
+    this.emitChange();
+  }
+  private removeTransliteration(i: number) {
+    this.transliterations = this.transliterations.filter((_, idx) => idx !== i);
+    this.xlitTab = Math.max(0, Math.min(this.xlitTab, this.transliterations.length - 1));
+    this.emitChange();
+  }
+
+  private langName(code: string) {
+    return this.languages.find((l) => l.code === code)?.name ?? code;
+  }
+
+  // ── Small render helpers ──────────────────────────────────────────
+  private renderLangSelect(value: string, onChange: (v: string) => void) {
+    return html`<select
+      .value=${value}
+      @change=${(e: Event) => onChange((e.target as HTMLSelectElement).value)}
+    >
+      ${value && !this.languages.some((l) => l.code === value)
+        ? html`<option value=${value}>${value}</option>`
+        : nothing}
+      ${this.languages.map((l) => html`<option value=${l.code}>${l.name}</option>`)}
+    </select>`;
+  }
+
+  private renderFields() {
+    return html`
+      <div class="fields">
+        <label class="field grow">
+          Title
+          <input
+            class="title-input"
+            .value=${this.title}
+            placeholder="Song title"
+            @input=${(e: Event) => {
+              this.title = (e.target as HTMLInputElement).value;
+              this.emitChange();
+            }}
+          />
+        </label>
+        <label class="field">
+          Language
+          ${this.renderLangSelect(this.language, (v) => {
+            this.language = v;
+            this.emitChange();
+          })}
+        </label>
+        <label class="field">
+          Key
+          <select
+            .value=${this.songKey}
+            @change=${(e: Event) => {
+              this.songKey = (e.target as HTMLSelectElement).value;
+              this.emitChange();
+            }}
+          >
+            <option value="">—</option>
+            ${SONG_KEYS.map((k) => html`<option value=${k}>${k}</option>`)}
+          </select>
+        </label>
+      </div>
+    `;
+  }
+
+  private renderTabs() {
+    const tabs: { id: "editor" | "translit" | "chords"; label: string }[] = [
+      { id: "editor", label: "Editor" },
+      { id: "translit", label: `Transliterations${this.transliterations.length ? ` (${this.transliterations.length})` : ""}` },
+      { id: "chords", label: "Chords" },
+    ];
+    return html`<div class="tabs">
+      ${tabs.map(
+        (t) => html`<button
+          class=${"tab" + (this.tab === t.id ? " active" : "")}
+          @click=${() => (this.tab = t.id)}
+        >
+          ${t.label}
+        </button>`
+      )}
+    </div>`;
+  }
+
+  private renderTransposeToolbar() {
+    const instruments: Instrument[] = ["piano", "guitar", "ukulele"];
+    return html`
+      <div class="toolbar">
+        <div class="group">
+          <span class="label">Transpose</span>
+          <button class="step" @click=${() => this.setTranspose(this.transpose - 1)}>−</button>
+          <span class="step-val">${this.transpose > 0 ? "+" : ""}${this.transpose}</span>
+          <button class="step" @click=${() => this.setTranspose(this.transpose + 1)}>+</button>
+        </div>
+        <div class="group spacer">
+          ${instruments.map(
+            (i) => html`<button
+              class=${i === this.instrument ? "active" : ""}
+              @click=${() => this.setInstrument(i)}
+            >
+              ${i}
+            </button>`
+          )}
+        </div>
+      </div>
+    `;
+  }
+
+  private renderChordsTab() {
+    const chords = getChordsInSong(this.body, this.transpose);
+    const instruments: Instrument[] = ["piano", "guitar", "ukulele"];
+    return html`
+      <div class="toolbar">
+        <span class="label">Diagrams for</span>
+        <div class="group">
+          ${instruments.map(
+            (i) => html`<button
+              class=${i === this.instrument ? "active" : ""}
+              @click=${() => this.setInstrument(i)}
+            >
+              ${i}
+            </button>`
+          )}
+        </div>
+      </div>
+      ${chords.length
+        ? html`<div class="diagrams">
+            ${chords.map(
+              (c) => html`<chord-diagram .chord=${c} .instrument=${this.instrument}></chord-diagram>`
+            )}
+          </div>`
+        : html`<div class="empty">No chords yet — add some like [C] or [G7] in the lyrics.</div>`}
+    `;
+  }
+
+  private renderTransliterationsTab() {
+    if (!this.transliterations.length) {
+      return html`
+        <div class="empty">No transliterations yet.</div>
+        <button @click=${() => this.addTransliteration()}>+ Add transliteration</button>
+      `;
+    }
+    const active = this.transliterations[Math.min(this.xlitTab, this.transliterations.length - 1)];
+    const activeIdx = this.transliterations.indexOf(active);
+    return html`
+      <div class="tabs">
+        ${this.transliterations.map(
+          (t, i) => html`<button
+            class=${"tab" + (i === this.xlitTab ? " active" : "")}
+            @click=${() => (this.xlitTab = i)}
+          >
+            ${this.langName(t.language) || `#${i + 1}`}
+          </button>`
+        )}
+        <button class="tab" @click=${() => this.addTransliteration()}>+ Add</button>
+      </div>
+      <div class="translit-head">
+        <label class="field">
+          Language
+          ${this.renderLangSelect(active.language, (v) => this.updateTransliteration(activeIdx, { language: v }))}
+        </label>
+        <span class="spacer" style="margin-left:auto"></span>
+        <button @click=${() => this.removeTransliteration(activeIdx)}>Remove</button>
+      </div>
+      <div class="body split">
+        <textarea
+          .value=${active.body}
+          @input=${(e: Event) => this.updateTransliteration(activeIdx, { body: (e.target as HTMLTextAreaElement).value })}
+          spellcheck="false"
+          placeholder="Transliterated lyrics with the same [chords]"
+        ></textarea>
+        ${this.renderSheet(active.body)}
+      </div>
+    `;
+  }
+
   private renderLine(line: SheetLine) {
     if (line.type === "blank") return html`<div class="blank"></div>`;
     if (line.type === "section")
@@ -322,89 +638,81 @@ export class ChordSheet extends LitElement {
     </div>`;
   }
 
-  private renderSheet() {
-    const lines = parseChordPro(this.body, this.transpose);
-    const displayKey = this.songKey
-      ? transposeNote(this.songKey, this.transpose)
-      : "";
-    const offset =
-      this.transpose !== 0
-        ? ` (${this.transpose > 0 ? "+" : ""}${this.transpose})`
-        : "";
+  private renderSheet(body: string = this.body) {
+    const lines = parseChordPro(body, this.transpose);
+    const displayKey = this.songKey ? transposeNote(this.songKey, this.transpose) : "";
+    const offset = this.transpose !== 0 ? ` (${this.transpose > 0 ? "+" : ""}${this.transpose})` : "";
+
+    // Group lines into section blocks so each section can be colour-tagged (data-section),
+    // which mobile apps read for background colours.
+    type Block = { type: SectionType | null; label: string | null; lines: SheetLine[] };
+    const blocks: Block[] = [];
+    let cur: Block = { type: null, label: null, lines: [] };
+    for (const line of lines) {
+      if (line.type === "section") {
+        if (cur.label || cur.lines.length) blocks.push(cur);
+        cur = { type: line.sectionType, label: line.label, lines: [] };
+      } else {
+        cur.lines.push(line);
+      }
+    }
+    if (cur.label || cur.lines.length) blocks.push(cur);
+
     return html`
       <div class="sheet">
         <div class="header">
           <div class="title">${this.title || "Untitled"}</div>
           <div class="meta">
-            ${this.artist}${this.artist && displayKey ? " · " : ""}${displayKey
-              ? "Key of " + displayKey
-              : ""}${offset}
+            ${this.artist}${this.artist && displayKey ? " · " : ""}${displayKey ? "Key of " + displayKey : ""}${offset}
           </div>
         </div>
-        ${lines.map((line) => this.renderLine(line))}
+        ${blocks.map(
+          (b) => html`<div class="block" data-section=${b.type ?? nothing}>
+            ${b.label ? html`<div class="section">${b.label}</div>` : nothing}
+            ${b.lines.map((line) => this.renderLine(line))}
+          </div>`
+        )}
       </div>
     `;
   }
 
   render() {
-    const chords = getChordsInSong(this.body, this.transpose);
-    const instruments: Instrument[] = ["piano", "guitar", "ukulele"];
-    return html`
-      ${this.readonly
-        ? nothing
-        : html`
-            <div class="toolbar">
-              <div class="group">
-                <span class="label">Transpose</span>
-                <button class="step" @click=${() => this.setTranspose(this.transpose - 1)}>
-                  −
-                </button>
-                <span class="step-val"
-                  >${this.transpose > 0 ? "+" : ""}${this.transpose}</span
-                >
-                <button class="step" @click=${() => this.setTranspose(this.transpose + 1)}>
-                  +
-                </button>
-              </div>
-              <div class="group spacer">
-                ${instruments.map(
-                  (i) => html`<button
-                    class=${i === this.instrument ? "active" : ""}
-                    @click=${() => this.setInstrument(i)}
-                  >
-                    ${i}
-                  </button>`
-                )}
-              </div>
-            </div>
-          `}
-
-      <div class="body ${this.readonly ? "" : "split"}">
-        ${this.readonly
-          ? nothing
-          : html`<textarea
-              .value=${this.body}
-              @input=${this.onInput}
-              spellcheck="false"
-              placeholder="# Verse 1&#10;[C]Type your lyrics with [G]chords in brackets"
-            ></textarea>`}
+    // Read-only: just the rendered sheet (+ optional diagram strip) — song/display views.
+    if (this.readonly) {
+      const chords = getChordsInSong(this.body, this.transpose);
+      return html`
         ${this.renderSheet()}
-      </div>
+        ${this.showDiagrams && chords.length
+          ? html`<div class="diagrams-label">Chords used — ${this.instrument}</div>
+              <div class="diagrams">
+                ${chords.map(
+                  (c) => html`<chord-diagram .chord=${c} .instrument=${this.instrument}></chord-diagram>`
+                )}
+              </div>`
+          : nothing}
+      `;
+    }
 
-      ${this.showDiagrams && chords.length
+    // Editor: title/language/key fields, then tabbed Editor / Transliterations / Chords.
+    return html`
+      ${this.renderFields()}
+      ${this.renderTabs()}
+      ${this.tab === "editor"
         ? html`
-            <div class="diagrams-label">Chords used — ${this.instrument}</div>
-            <div class="diagrams">
-              ${chords.map(
-                (c) =>
-                  html`<chord-diagram
-                    .chord=${c}
-                    .instrument=${this.instrument}
-                  ></chord-diagram>`
-              )}
+            ${this.renderTransposeToolbar()}
+            <div class="body split">
+              <textarea
+                .value=${this.body}
+                @input=${this.onInput}
+                spellcheck="false"
+                placeholder="# Verse 1&#10;[C]Type your lyrics with [G]chords in brackets"
+              ></textarea>
+              ${this.renderSheet()}
             </div>
           `
-        : nothing}
+        : this.tab === "translit"
+          ? this.renderTransliterationsTab()
+          : this.renderChordsTab()}
     `;
   }
 }
