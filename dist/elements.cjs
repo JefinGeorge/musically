@@ -587,7 +587,9 @@ exports.ChordSheet.styles = lit.css`
       opacity: 1;
     }
     .tab.active {
-      color: var(--musically-accent, #1d4ed8);
+      /* Keep the label in the readable text colour; the accent underline signals "selected"
+         (accent-as-text contrast is unreliable across themes). */
+      color: var(--musically-text, #33312c);
       border-bottom-color: var(--musically-accent, #1d4ed8);
       opacity: 1;
     }
