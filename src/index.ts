@@ -27,8 +27,38 @@ export interface ChordSegment {
   text: string;
 }
 
+/** Canonical song-section types, derived from a section header so apps can colour them. */
+export const SECTION_TYPES = [
+  "intro",
+  "verse",
+  "pre-chorus",
+  "chorus",
+  "bridge",
+  "outro",
+  "section",
+] as const;
+export type SectionType = (typeof SECTION_TYPES)[number];
+
+/** Infer a canonical [SectionType] from a section header label (e.g. "Pre-Chorus 2" → "pre-chorus"). */
+export function sectionTypeFromLabel(label: string): SectionType {
+  const s = label.toLowerCase().replace(/[\s_-]+/g, "");
+  if (s.startsWith("intro")) return "intro";
+  if (s.startsWith("prechorus") || s.startsWith("prehook")) return "pre-chorus";
+  if (s.startsWith("chorus") || s.startsWith("refrain") || s.startsWith("hook")) return "chorus";
+  if (s.startsWith("verse")) return "verse";
+  if (s.startsWith("bridge")) return "bridge";
+  if (s.startsWith("outro") || s.startsWith("ending") || s.startsWith("coda")) return "outro";
+  return "section";
+}
+
+/** Musical keys for the editor's key picker: majors then minors, both enharmonic spellings. */
+export const SONG_KEYS: string[] = [
+  "C", "C#", "Db", "D", "D#", "Eb", "E", "F", "F#", "Gb", "G", "G#", "Ab", "A", "A#", "Bb", "B",
+  "Cm", "C#m", "Dbm", "Dm", "D#m", "Ebm", "Em", "Fm", "F#m", "Gbm", "Gm", "G#m", "Abm", "Am", "A#m", "Bbm", "Bm",
+];
+
 export type SheetLine =
-  | { type: "section"; label: string }
+  | { type: "section"; label: string; sectionType: SectionType }
   | { type: "lyric"; segments: ChordSegment[] }
   | { type: "blank" };
 
@@ -227,7 +257,10 @@ export function parseChordPro(text: string, transpose = 0): SheetLine[] {
   return String(text).split("\n").map((raw): SheetLine => {
     const trimmed = raw.trim();
     if (trimmed === "") return { type: "blank" };
-    if (trimmed.startsWith("#")) return { type: "section", label: trimmed.replace(/^#\s*/, "") };
+    if (trimmed.startsWith("#")) {
+      const label = trimmed.replace(/^#\s*/, "");
+      return { type: "section", label, sectionType: sectionTypeFromLabel(label) };
+    }
     let segments = parseLine(raw);
     if (transpose) {
       segments = segments.map((s) => ({

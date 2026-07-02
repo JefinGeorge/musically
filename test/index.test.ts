@@ -236,9 +236,19 @@ describe("parseChordPro", () => {
     expect(lines.every((l) => l.type === "blank")).toBe(true);
   });
 
-  it("turns leading-# lines into section labels", () => {
+  it("turns leading-# lines into section labels with an inferred type", () => {
     const [line] = parseChordPro("# Verse 1");
-    expect(line).toEqual({ type: "section", label: "Verse 1" });
+    expect(line).toEqual({ type: "section", label: "Verse 1", sectionType: "verse" });
+  });
+
+  it("infers the section type from the header keyword", () => {
+    const type = (h: string) => (parseChordPro(h)[0] as { sectionType: string }).sectionType;
+    expect(type("# Intro")).toBe("intro");
+    expect(type("# Pre-Chorus 2")).toBe("pre-chorus");
+    expect(type("# Chorus")).toBe("chorus");
+    expect(type("# Bridge")).toBe("bridge");
+    expect(type("# Outro")).toBe("outro");
+    expect(type("# Interlude")).toBe("section"); // unknown → generic
   });
 
   it("parses lyric lines into segments", () => {

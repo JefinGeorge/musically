@@ -139,25 +139,26 @@ describe("<chord-sheet>", () => {
     expect(root.querySelector(".seg .chord")?.textContent).toBe("C");
   });
 
-  it("renders a 'chords used' diagram strip when chords are present", async () => {
+  it("renders a 'chords used' diagram strip (readonly) when chords are present", async () => {
     el.body = "[C]a [G]b";
+    el.readonly = true;
     await mount(el);
     const diagrams = el.shadowRoot!.querySelectorAll("chord-diagram");
     expect(diagrams.length).toBe(2);
-    expect(el.shadowRoot!.querySelector(".diagrams-label")?.textContent).toContain(
-      "piano"
-    );
+    expect(el.shadowRoot!.querySelector(".diagrams-label")?.textContent).toContain("piano");
   });
 
-  it("omits the diagram strip when show-diagrams is off", async () => {
+  it("omits the diagram strip when show-diagrams is off (readonly)", async () => {
     el.body = "[C]a";
+    el.readonly = true;
     el.showDiagrams = false;
     await mount(el);
     expect(el.shadowRoot!.querySelector("chord-diagram")).toBeNull();
   });
 
-  it("omits the diagram strip when the song has no chords", async () => {
+  it("omits the diagram strip when the song has no chords (readonly)", async () => {
     el.body = "just lyrics";
+    el.readonly = true;
     await mount(el);
     expect(el.shadowRoot!.querySelector("chord-diagram")).toBeNull();
   });
@@ -211,9 +212,6 @@ describe("<chord-sheet>", () => {
     expect(el.instrument).toBe("guitar");
     expect(detail.instrument).toBe("guitar");
     expect(guitarBtn.classList.contains("active")).toBe(true);
-    expect(el.shadowRoot!.querySelector(".diagrams-label")?.textContent).toContain(
-      "guitar"
-    );
   });
 
   it("editing the textarea updates body and emits change", async () => {
@@ -238,5 +236,48 @@ describe("<chord-sheet>", () => {
     el.shadowRoot!.querySelectorAll<HTMLButtonElement>("button.step")[1].click();
     expect((evt as unknown as CustomEvent).bubbles).toBe(true);
     expect((evt as unknown as CustomEvent).composed).toBe(true);
+  });
+
+  it("shows title/language/key fields in editor mode", async () => {
+    el.languages = [{ code: "en", name: "English" }, { code: "ml", name: "Malayalam" }];
+    await mount(el);
+    const root = el.shadowRoot!;
+    expect(root.querySelector("input.title-input")).not.toBeNull();
+    expect(root.querySelectorAll("select").length).toBeGreaterThanOrEqual(2); // language + key
+    expect(root.querySelector(".tabs")).not.toBeNull();
+  });
+
+  it("tags each section with data-section for mobile colouring", async () => {
+    el.body = "# Chorus\n[C]sing\n# Pre-Chorus\n[G]rise";
+    el.readonly = true;
+    await mount(el);
+    const sections = [...el.shadowRoot!.querySelectorAll(".block[data-section]")].map((b) =>
+      b.getAttribute("data-section")
+    );
+    expect(sections).toContain("chorus");
+    expect(sections).toContain("pre-chorus");
+  });
+
+  it("adds a transliteration from the Transliterations tab and emits change", async () => {
+    el.languages = [{ code: "en", name: "English" }, { code: "ml", name: "Malayalam" }];
+    await mount(el);
+    let detail: any = null;
+    el.addEventListener("change", (e) => (detail = (e as CustomEvent).detail));
+
+    // Switch to the Transliterations tab.
+    const translitTab = [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>(".tab")].find((b) =>
+      b.textContent?.includes("Transliterations")
+    )!;
+    translitTab.click();
+    await el.updateComplete;
+
+    const addBtn = [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>("button")].find(
+      (b) => b.textContent?.trim().startsWith("+ Add")
+    )!;
+    addBtn.click();
+    await el.updateComplete;
+
+    expect(el.transliterations.length).toBe(1);
+    expect(detail.transliterations.length).toBe(1);
   });
 });
