@@ -9,8 +9,10 @@ Musically ships as standard **Web Components**, so it drops into **React, Angula
 ## Features
 
 - **Chord-over-lyric sheets** — write lyrics with inline chords (ChordPro style) and render them neatly aligned.
+- **Structured sections** — lines starting with `#` become labelled sections (intro, verse, pre-chorus, chorus, bridge, outro), inferred from the heading and available for styling.
 - **Transpose** — shift an entire song up or down by semitones, with the key updated automatically.
 - **Switchable diagrams** — piano, guitar, and ukulele. Piano is computed from music theory (works for *any* chord); guitar/ukulele use a built-in shape library.
+- **Multi-language & transliterations** — tag a sheet with its language, offer a language list, and attach alternate-script versions shown in their own tab.
 - **Performance & print views** — a clean, large reading layout for live use.
 - **Themeable** — restyle everything through CSS custom properties.
 - **Headless core** — use the theory engine on its own, no UI required.
@@ -135,8 +137,15 @@ The full editor + sheet renderer.
 | `instrument` | `"piano" \| "guitar" \| "ukulele"` | `"piano"` | Diagram instrument. |
 | `show-diagrams` | `boolean` | `true` | Toggle the "chords used" diagram strip. |
 | `readonly` | `boolean` | `false` | Hide the editor and show only the sheet. |
+| `language` | `string` | `""` | BCP-47 language of the sheet's lyrics. |
+| `languages` | `LanguageOption[]` | `[]` | Selectable languages for the editor's language dropdown. **Property only** (set via JS, not an attribute). |
+| `transliterations` | `Transliteration[]` | `[]` | Alternate-script versions, shown in the Transliterations tab. **Property only.** |
 
-**Event:** `change` — fired when the body or settings change. `event.detail` contains `{ body, title, artist, transpose, instrument }`.
+`LanguageOption` is `{ code: string; name: string }`; `Transliteration` is `{ language: string; body: string }`.
+
+The editor is organised into **Editor**, **Transliterations**, and **Chords** tabs. Section labels (lines starting with `#`) are classified as `intro`, `verse`, `pre-chorus`, `chorus`, `bridge`, `outro`, or generic `section`.
+
+**Event:** `change` — fired when the body or settings change. `event.detail` contains `{ body, title, artist, language, songKey, transpose, instrument, transliterations }`.
 
 ### `<chord-diagram>`
 
