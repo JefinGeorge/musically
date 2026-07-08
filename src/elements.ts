@@ -20,6 +20,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import {
   parseChordPro,
+  displayLines,
   getChordsInSong,
   chordNotes,
   getDiagramSVG,
@@ -120,10 +121,31 @@ export class ChordSheet extends LitElement {
   @property() body = "";
   /** Song title shown in the header. */
   @property() title = "";
-  /** Artist / author. */
+  /** Performing artist (free text). */
   @property() artist = "";
+  /** Lyricist / author (free text). */
+  @property() author = "";
+  /** Composer (free text). */
+  @property() composer = "";
+  /** Music director (free text). */
+  @property({ attribute: "music-director" }) musicDirector = "";
   /** Original key; transposes along with the song. */
   @property({ attribute: "song-key" }) songKey = "";
+  /**
+   * Whether the song *officially* carries embedded music chords. When false the song is treated as
+   * lyrics-only: any [chords] in the body are ignored on display and inter-line spacing is tightened.
+   */
+  @property({ type: Boolean, attribute: "has-chords" }) hasChords = false;
+  /** Beats per minute (0 = unset). */
+  @property({ type: Number }) tempo = 0;
+  /** Preferred performance key (independent of the transposable original `songKey`). */
+  @property({ attribute: "preferred-key" }) preferredKey = "";
+  /** Tonality: "major" | "minor" | "". */
+  @property() mode = "";
+  /** Time signature, e.g. "4/4", "6/8". */
+  @property({ attribute: "time-signature" }) timeSignature = "";
+  /** Free-text rhythm / strumming pattern. */
+  @property({ attribute: "rhythm-pattern" }) rhythmPattern = "";
   /** Semitones to shift all chords. */
   @property({ type: Number }) transpose = 0;
   /** Diagram instrument. */
@@ -140,7 +162,7 @@ export class ChordSheet extends LitElement {
   @property({ attribute: false }) transliterations: Transliteration[] = [];
 
   /** Which editor tab is active. */
-  @state() private tab: "editor" | "translit" | "chords" = "editor";
+  @state() private tab: "editor" | "credits" | "music" | "translit" | "chords" = "editor";
   /** Which transliteration tab is active (index into transliterations). */
   @state() private xlitTab = 0;
 
@@ -257,10 +279,10 @@ export class ChordSheet extends LitElement {
       margin-top: 0;
     }
     .blank {
-      height: 12px;
+      height: 10px;
     }
     .line {
-      margin-bottom: 12px;
+      margin-bottom: 6px;
       line-height: 1.15;
     }
     .seg {
@@ -281,6 +303,17 @@ export class ChordSheet extends LitElement {
       white-space: pre;
       font-size: 16.5px;
       line-height: 1.5;
+    }
+    /* Lyrics-only (no official chords): drop the empty chord row and tighten the lines so only the
+       section breaks add vertical space. */
+    .sheet.lyrics-only .seg .chord {
+      display: none;
+    }
+    .sheet.lyrics-only .line {
+      margin-bottom: 1px;
+    }
+    .sheet.lyrics-only .seg .lyric {
+      line-height: 1.42;
     }
     .diagrams {
       margin-top: 18px;
@@ -384,28 +417,29 @@ export class ChordSheet extends LitElement {
     .block[data-section] .section {
       margin-top: 0;
     }
-    /* Default web look: a coloured left-border cue only — no background fill, so lyric/chord text
-       stays fully readable. Apps still get the section type via [data-section] to colour as they
-       wish, and a faint fill can be opted into with --musically-section-fill (e.g. 8%). */
+    /* Each section gets a coloured left-border cue plus a faint background tint so verses, choruses,
+       etc. are visually distinct while text stays readable. The tint strength is tunable with
+       --musically-section-fill (default 9%); set it to 0% for a border-only look. */
     .block[data-section="chorus"] {
       border-left-color: var(--musically-accent, #1d4ed8);
-      background: color-mix(in srgb, var(--musically-accent, #1d4ed8) var(--musically-section-fill, 0%), transparent);
+      background: color-mix(in srgb, var(--musically-accent, #1d4ed8) var(--musically-section-fill, 9%), transparent);
     }
     .block[data-section="pre-chorus"] {
       border-left-color: var(--musically-section-prechorus, #b8791b);
-      background: color-mix(in srgb, var(--musically-section-prechorus, #b8791b) var(--musically-section-fill, 0%), transparent);
+      background: color-mix(in srgb, var(--musically-section-prechorus, #b8791b) var(--musically-section-fill, 9%), transparent);
     }
     .block[data-section="bridge"] {
       border-left-color: var(--musically-section-bridge, #7c3aed);
-      background: color-mix(in srgb, var(--musically-section-bridge, #7c3aed) var(--musically-section-fill, 0%), transparent);
+      background: color-mix(in srgb, var(--musically-section-bridge, #7c3aed) var(--musically-section-fill, 9%), transparent);
     }
     .block[data-section="intro"],
     .block[data-section="outro"] {
       border-left-color: var(--musically-muted, #8a8169);
-      background: color-mix(in srgb, var(--musically-muted, #8a8169) var(--musically-section-fill, 0%), transparent);
+      background: color-mix(in srgb, var(--musically-muted, #8a8169) var(--musically-section-fill, 9%), transparent);
     }
     .block[data-section="verse"] {
       border-left-color: color-mix(in srgb, var(--musically-text, #33312c) 25%, transparent);
+      background: color-mix(in srgb, var(--musically-text, #33312c) 4%, transparent);
     }
 
     .translit-head {
@@ -419,6 +453,49 @@ export class ChordSheet extends LitElement {
       font-size: 14px;
       padding: 20px 0;
     }
+
+    /* Credits / Music metadata tabs */
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+    input.text-input {
+      font: inherit;
+      font-size: 14px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--musically-border, #d8cfb8);
+      background: var(--musically-paper, #fffdf8);
+      color: var(--musically-text, #33312c);
+      outline: none;
+    }
+    input.text-input:focus {
+      border-color: var(--musically-accent, #1d4ed8);
+    }
+    .check {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 4px 0 14px;
+      cursor: pointer;
+    }
+    .check input {
+      width: 18px;
+      height: 18px;
+      margin-top: 2px;
+      accent-color: var(--musically-accent, #1d4ed8);
+    }
+    .check .check-text {
+      font-size: 14px;
+      color: var(--musically-text, #33312c);
+    }
+    .check .check-text small {
+      display: block;
+      font-size: 12px;
+      color: var(--musically-muted, #8a8169);
+      margin-top: 2px;
+    }
   `;
 
   private emitChange() {
@@ -428,8 +505,17 @@ export class ChordSheet extends LitElement {
           body: this.body,
           title: this.title,
           artist: this.artist,
+          author: this.author,
+          composer: this.composer,
+          musicDirector: this.musicDirector,
           language: this.language,
           songKey: this.songKey,
+          hasChords: this.hasChords,
+          tempo: this.tempo,
+          preferredKey: this.preferredKey,
+          mode: this.mode,
+          timeSignature: this.timeSignature,
+          rhythmPattern: this.rhythmPattern,
           transpose: this.transpose,
           instrument: this.instrument,
           transliterations: this.transliterations,
@@ -530,8 +616,10 @@ export class ChordSheet extends LitElement {
   }
 
   private renderTabs() {
-    const tabs: { id: "editor" | "translit" | "chords"; label: string }[] = [
+    const tabs: { id: "editor" | "credits" | "music" | "translit" | "chords"; label: string }[] = [
       { id: "editor", label: "Editor" },
+      { id: "credits", label: "Credits" },
+      { id: "music", label: "Music" },
       { id: "translit", label: `Transliterations${this.transliterations.length ? ` (${this.transliterations.length})` : ""}` },
       { id: "chords", label: "Chords" },
     ];
@@ -545,6 +633,97 @@ export class ChordSheet extends LitElement {
         </button>`
       )}
     </div>`;
+  }
+
+  /** A labelled free-text field bound to one string property, emitting `change` on input. */
+  private renderTextField(label: string, value: string, assign: (v: string) => void, placeholder = "") {
+    return html`<label class="field grow">
+      ${label}
+      <input
+        class="text-input"
+        .value=${value}
+        placeholder=${placeholder}
+        @input=${(e: Event) => {
+          assign((e.target as HTMLInputElement).value);
+          this.emitChange();
+        }}
+      />
+    </label>`;
+  }
+
+  // ── Credits tab (author / composer / music director / performing artist) ──
+  private renderCreditsTab() {
+    return html`<div class="meta-grid">
+      ${this.renderTextField("Author (lyricist)", this.author, (v) => (this.author = v), "e.g. Charles Wesley")}
+      ${this.renderTextField("Composer", this.composer, (v) => (this.composer = v), "e.g. Felix Mendelssohn")}
+      ${this.renderTextField("Music director", this.musicDirector, (v) => (this.musicDirector = v))}
+      ${this.renderTextField("Performing artist", this.artist, (v) => (this.artist = v))}
+    </div>`;
+  }
+
+  // ── Music tab (chords flag + performance metadata) ──
+  private renderMusicTab() {
+    return html`
+      <label class="check">
+        <input
+          type="checkbox"
+          .checked=${this.hasChords}
+          @change=${(e: Event) => {
+            this.hasChords = (e.target as HTMLInputElement).checked;
+            this.emitChange();
+          }}
+        />
+        <span class="check-text">
+          Officially carries music chords
+          <small>When off, the song is shown as lyrics-only — any [chords] in the body are ignored.</small>
+        </span>
+      </label>
+      <div class="meta-grid">
+        <label class="field grow">
+          Tempo (BPM)
+          <input
+            class="text-input"
+            type="number"
+            min="0"
+            .value=${this.tempo ? String(this.tempo) : ""}
+            placeholder="e.g. 72"
+            @input=${(e: Event) => {
+              this.tempo = Number((e.target as HTMLInputElement).value) || 0;
+              this.emitChange();
+            }}
+          />
+        </label>
+        <label class="field">
+          Preferred key
+          <select
+            .value=${this.preferredKey}
+            @change=${(e: Event) => {
+              this.preferredKey = (e.target as HTMLSelectElement).value;
+              this.emitChange();
+            }}
+          >
+            <option value="">—</option>
+            ${SONG_KEYS.map((k) => html`<option value=${k}>${k}</option>`)}
+          </select>
+        </label>
+        <label class="field">
+          Tonality
+          <select
+            .value=${this.mode}
+            @change=${(e: Event) => {
+              this.mode = (e.target as HTMLSelectElement).value;
+              this.emitChange();
+            }}
+          >
+            <option value="">—</option>
+            <option value="major">Major</option>
+            <option value="minor">Minor</option>
+          </select>
+        </label>
+        ${this.renderTextField("Time signature", this.timeSignature, (v) => (this.timeSignature = v), "e.g. 4/4")}
+        ${this.renderTextField("Rhythm pattern", this.rhythmPattern, (v) => (this.rhythmPattern = v), "e.g. D DU UDU")}
+      </div>
+    `;
   }
 
   private renderTransposeToolbar() {
@@ -654,7 +833,8 @@ export class ChordSheet extends LitElement {
   }
 
   private renderSheet(body: string = this.body) {
-    const lines = parseChordPro(body, this.transpose);
+    // Lyrics-only songs (no official chords) drop embedded chords + inter-line blanks.
+    const lines = displayLines(parseChordPro(body, this.transpose), this.hasChords);
     const displayKey = this.songKey ? transposeNote(this.songKey, this.transpose) : "";
     const offset = this.transpose !== 0 ? ` (${this.transpose > 0 ? "+" : ""}${this.transpose})` : "";
 
@@ -674,7 +854,7 @@ export class ChordSheet extends LitElement {
     if (cur.label || cur.lines.length) blocks.push(cur);
 
     return html`
-      <div class="sheet">
+      <div class=${"sheet" + (this.hasChords ? "" : " lyrics-only")}>
         <div class="header">
           <div class="title">${this.title || "Untitled"}</div>
           <div class="meta">
@@ -697,7 +877,7 @@ export class ChordSheet extends LitElement {
       const chords = getChordsInSong(this.body, this.transpose);
       return html`
         ${this.renderSheet()}
-        ${this.showDiagrams && chords.length
+        ${this.hasChords && this.showDiagrams && chords.length
           ? html`<div class="diagrams-label">Chords used — ${this.instrument}</div>
               <div class="diagrams">
                 ${chords.map(
@@ -725,9 +905,13 @@ export class ChordSheet extends LitElement {
               ${this.renderSheet()}
             </div>
           `
-        : this.tab === "translit"
-          ? this.renderTransliterationsTab()
-          : this.renderChordsTab()}
+        : this.tab === "credits"
+          ? this.renderCreditsTab()
+          : this.tab === "music"
+            ? this.renderMusicTab()
+            : this.tab === "translit"
+              ? this.renderTransliterationsTab()
+              : this.renderChordsTab()}
     `;
   }
 }

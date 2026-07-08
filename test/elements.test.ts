@@ -131,6 +131,7 @@ describe("<chord-sheet>", () => {
 
   it("renders sections, lyric lines, and blank lines", async () => {
     el.body = "# Verse\n[C]Hello\n\nplain";
+    el.hasChords = true;
     await mount(el);
     const root = el.shadowRoot!;
     expect(root.querySelector(".section")?.textContent).toBe("Verse");
@@ -141,6 +142,7 @@ describe("<chord-sheet>", () => {
 
   it("renders a 'chords used' diagram strip (readonly) when chords are present", async () => {
     el.body = "[C]a [G]b";
+    el.hasChords = true;
     el.readonly = true;
     await mount(el);
     const diagrams = el.shadowRoot!.querySelectorAll("chord-diagram");
@@ -165,6 +167,7 @@ describe("<chord-sheet>", () => {
 
   it("transposes the displayed chords and key", async () => {
     el.body = "[C]a [G]b";
+    el.hasChords = true;
     el.songKey = "C";
     el.transpose = 2;
     await mount(el);
@@ -215,6 +218,7 @@ describe("<chord-sheet>", () => {
   });
 
   it("editing the textarea updates body and emits change", async () => {
+    el.hasChords = true;
     await mount(el);
     let detail: any = null;
     el.addEventListener("change", (e) => (detail = (e as CustomEvent).detail));
@@ -256,6 +260,56 @@ describe("<chord-sheet>", () => {
     );
     expect(sections).toContain("chorus");
     expect(sections).toContain("pre-chorus");
+  });
+
+  it("ignores embedded chords and drops blank lines when lyrics-only (has-chords off)", async () => {
+    el.body = "# Verse\n[C]Hello\n\n[G]world";
+    el.readonly = true; // hasChords defaults to false
+    await mount(el);
+    const root = el.shadowRoot!;
+    // Lyrics-only sheet: no rendered chord text, no blank spacer, no diagram strip.
+    const chordText = [...root.querySelectorAll(".seg .chord")].map((n) => n.textContent?.trim()).join("");
+    expect(chordText).toBe("");
+    expect(root.querySelector(".blank")).toBeNull();
+    expect(root.querySelector("chord-diagram")).toBeNull();
+    expect(root.querySelector(".sheet.lyrics-only")).not.toBeNull();
+    // The lyric text is still there.
+    expect(root.textContent).toContain("Hello");
+    expect(root.textContent).toContain("world");
+  });
+
+  it("has Credits and Music tabs; toggling has-chords emits the flag", async () => {
+    await mount(el);
+    const root = el.shadowRoot!;
+    const tabLabels = [...root.querySelectorAll(".tab")].map((t) => t.textContent?.trim());
+    expect(tabLabels).toContain("Credits");
+    expect(tabLabels).toContain("Music");
+
+    let detail: any = null;
+    el.addEventListener("change", (e) => (detail = (e as CustomEvent).detail));
+    const musicTab = [...root.querySelectorAll<HTMLButtonElement>(".tab")].find((b) => b.textContent?.trim() === "Music")!;
+    musicTab.click();
+    await el.updateComplete;
+    const checkbox = root.querySelector<HTMLInputElement>('input[type="checkbox"]')!;
+    checkbox.click();
+    await el.updateComplete;
+    expect(el.hasChords).toBe(true);
+    expect(detail.hasChords).toBe(true);
+  });
+
+  it("emits credits fields (author/composer) from the change event", async () => {
+    await mount(el);
+    let detail: any = null;
+    el.addEventListener("change", (e) => (detail = (e as CustomEvent).detail));
+    const creditsTab = [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>(".tab")].find((b) => b.textContent?.trim() === "Credits")!;
+    creditsTab.click();
+    await el.updateComplete;
+    const firstInput = el.shadowRoot!.querySelector<HTMLInputElement>("input.text-input")!;
+    firstInput.value = "Charles Wesley";
+    firstInput.dispatchEvent(new Event("input"));
+    await el.updateComplete;
+    expect(el.author).toBe("Charles Wesley");
+    expect(detail.author).toBe("Charles Wesley");
   });
 
   it("adds a transliteration from the Transliterations tab and emits change", async () => {

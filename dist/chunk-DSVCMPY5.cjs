@@ -322,6 +322,19 @@ function parseChordPro(text, transpose = 0) {
     return { type: "lyric", segments };
   });
 }
+function displayLines(lines, hasChords) {
+  if (hasChords) return lines;
+  const out = [];
+  for (const line of lines) {
+    if (line.type === "blank") continue;
+    if (line.type === "lyric") {
+      out.push({ type: "lyric", segments: line.segments.map((s) => ({ chord: null, text: s.text })) });
+    } else {
+      out.push(line);
+    }
+  }
+  return out;
+}
 function getChordsInSong(text, transpose = 0) {
   const seen = /* @__PURE__ */ new Set();
   const list = [];
@@ -416,6 +429,7 @@ exports.SONG_KEYS = SONG_KEYS;
 exports.UKULELE_SHAPES = UKULELE_SHAPES;
 exports.__decorateClass = __decorateClass;
 exports.chordNotes = chordNotes;
+exports.displayLines = displayLines;
 exports.getChordsInSong = getChordsInSong;
 exports.getDiagramSVG = getDiagramSVG;
 exports.getShape = getShape;
@@ -426,5 +440,5 @@ exports.qualityIntervals = qualityIntervals;
 exports.sectionTypeFromLabel = sectionTypeFromLabel;
 exports.transposeChord = transposeChord;
 exports.transposeNote = transposeNote;
-//# sourceMappingURL=chunk-CD2SD4KN.cjs.map
-//# sourceMappingURL=chunk-CD2SD4KN.cjs.map
+//# sourceMappingURL=chunk-DSVCMPY5.cjs.map
+//# sourceMappingURL=chunk-DSVCMPY5.cjs.map
