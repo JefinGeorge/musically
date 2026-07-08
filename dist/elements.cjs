@@ -1,6 +1,6 @@
 'use strict';
 
-var chunkCD2SD4KN_cjs = require('./chunk-CD2SD4KN.cjs');
+var chunkDSVCMPY5_cjs = require('./chunk-DSVCMPY5.cjs');
 var lit = require('lit');
 var decorators_js = require('lit/decorators.js');
 var unsafeHtml_js = require('lit/directives/unsafe-html.js');
@@ -23,12 +23,12 @@ exports.ChordDiagram = class ChordDiagram extends lit.LitElement {
   }
   render() {
     if (!this.chord) return lit.nothing;
-    const diagram = chunkCD2SD4KN_cjs.getDiagramSVG(this.chord, this.instrument, this.themeOptions());
+    const diagram = chunkDSVCMPY5_cjs.getDiagramSVG(this.chord, this.instrument, this.themeOptions());
     return lit.html`
       <div class="card">
         ${this.diagramOnly ? lit.nothing : lit.html`<div class="name">${this.chord}</div>`}
         ${unsafeHtml_js.unsafeHTML(diagram)}
-        ${this.diagramOnly ? lit.nothing : lit.html`<div class="notes">${chunkCD2SD4KN_cjs.chordNotes(this.chord).join(" \xB7 ")}</div>`}
+        ${this.diagramOnly ? lit.nothing : lit.html`<div class="notes">${chunkDSVCMPY5_cjs.chordNotes(this.chord).join(" \xB7 ")}</div>`}
       </div>
     `;
   }
@@ -63,16 +63,16 @@ exports.ChordDiagram.styles = lit.css`
       display: block;
     }
   `;
-chunkCD2SD4KN_cjs.__decorateClass([
+chunkDSVCMPY5_cjs.__decorateClass([
   decorators_js.property()
 ], exports.ChordDiagram.prototype, "chord", 2);
-chunkCD2SD4KN_cjs.__decorateClass([
+chunkDSVCMPY5_cjs.__decorateClass([
   decorators_js.property()
 ], exports.ChordDiagram.prototype, "instrument", 2);
-chunkCD2SD4KN_cjs.__decorateClass([
+chunkDSVCMPY5_cjs.__decorateClass([
   decorators_js.property({ type: Boolean, attribute: "diagram-only" })
 ], exports.ChordDiagram.prototype, "diagramOnly", 2);
-exports.ChordDiagram = chunkCD2SD4KN_cjs.__decorateClass([
+exports.ChordDiagram = chunkDSVCMPY5_cjs.__decorateClass([
   decorators_js.customElement("chord-diagram")
 ], exports.ChordDiagram);
 exports.ChordSheet = class ChordSheet extends lit.LitElement {
@@ -81,7 +81,16 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
     this.body = "";
     this.title = "";
     this.artist = "";
+    this.author = "";
+    this.composer = "";
+    this.musicDirector = "";
     this.songKey = "";
+    this.hasChords = false;
+    this.tempo = 0;
+    this.preferredKey = "";
+    this.mode = "";
+    this.timeSignature = "";
+    this.rhythmPattern = "";
     this.transpose = 0;
     this.instrument = "piano";
     this.showDiagrams = true;
@@ -99,8 +108,17 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
           body: this.body,
           title: this.title,
           artist: this.artist,
+          author: this.author,
+          composer: this.composer,
+          musicDirector: this.musicDirector,
           language: this.language,
           songKey: this.songKey,
+          hasChords: this.hasChords,
+          tempo: this.tempo,
+          preferredKey: this.preferredKey,
+          mode: this.mode,
+          timeSignature: this.timeSignature,
+          rhythmPattern: this.rhythmPattern,
           transpose: this.transpose,
           instrument: this.instrument,
           transliterations: this.transliterations
@@ -184,7 +202,7 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
     }}
           >
             <option value="">—</option>
-            ${chunkCD2SD4KN_cjs.SONG_KEYS.map((k) => lit.html`<option value=${k}>${k}</option>`)}
+            ${chunkDSVCMPY5_cjs.SONG_KEYS.map((k) => lit.html`<option value=${k}>${k}</option>`)}
           </select>
         </label>
       </div>
@@ -193,6 +211,8 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
   renderTabs() {
     const tabs = [
       { id: "editor", label: "Editor" },
+      { id: "credits", label: "Credits" },
+      { id: "music", label: "Music" },
       { id: "translit", label: `Transliterations${this.transliterations.length ? ` (${this.transliterations.length})` : ""}` },
       { id: "chords", label: "Chords" }
     ];
@@ -206,6 +226,94 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
         </button>`
     )}
     </div>`;
+  }
+  /** A labelled free-text field bound to one string property, emitting `change` on input. */
+  renderTextField(label, value, assign, placeholder = "") {
+    return lit.html`<label class="field grow">
+      ${label}
+      <input
+        class="text-input"
+        .value=${value}
+        placeholder=${placeholder}
+        @input=${(e) => {
+      assign(e.target.value);
+      this.emitChange();
+    }}
+      />
+    </label>`;
+  }
+  // ── Credits tab (author / composer / music director / performing artist) ──
+  renderCreditsTab() {
+    return lit.html`<div class="meta-grid">
+      ${this.renderTextField("Author (lyricist)", this.author, (v) => this.author = v, "e.g. Charles Wesley")}
+      ${this.renderTextField("Composer", this.composer, (v) => this.composer = v, "e.g. Felix Mendelssohn")}
+      ${this.renderTextField("Music director", this.musicDirector, (v) => this.musicDirector = v)}
+      ${this.renderTextField("Performing artist", this.artist, (v) => this.artist = v)}
+    </div>`;
+  }
+  // ── Music tab (chords flag + performance metadata) ──
+  renderMusicTab() {
+    return lit.html`
+      <label class="check">
+        <input
+          type="checkbox"
+          .checked=${this.hasChords}
+          @change=${(e) => {
+      this.hasChords = e.target.checked;
+      this.emitChange();
+    }}
+        />
+        <span class="check-text">
+          Officially carries music chords
+          <small>When off, the song is shown as lyrics-only — any [chords] in the body are ignored.</small>
+        </span>
+      </label>
+      <div class="meta-grid">
+        <label class="field grow">
+          Tempo (BPM)
+          <input
+            class="text-input"
+            type="number"
+            min="0"
+            .value=${this.tempo ? String(this.tempo) : ""}
+            placeholder="e.g. 72"
+            @input=${(e) => {
+      this.tempo = Number(e.target.value) || 0;
+      this.emitChange();
+    }}
+          />
+        </label>
+        <label class="field">
+          Preferred key
+          <select
+            .value=${this.preferredKey}
+            @change=${(e) => {
+      this.preferredKey = e.target.value;
+      this.emitChange();
+    }}
+          >
+            <option value="">—</option>
+            ${chunkDSVCMPY5_cjs.SONG_KEYS.map((k) => lit.html`<option value=${k}>${k}</option>`)}
+          </select>
+        </label>
+        <label class="field">
+          Tonality
+          <select
+            .value=${this.mode}
+            @change=${(e) => {
+      this.mode = e.target.value;
+      this.emitChange();
+    }}
+          >
+            <option value="">—</option>
+            <option value="major">Major</option>
+            <option value="minor">Minor</option>
+          </select>
+        </label>
+        ${this.renderTextField("Time signature", this.timeSignature, (v) => this.timeSignature = v, "e.g. 4/4")}
+        ${this.renderTextField("Rhythm pattern", this.rhythmPattern, (v) => this.rhythmPattern = v, "e.g. D DU UDU")}
+      </div>
+    `;
   }
   renderTransposeToolbar() {
     const instruments = ["piano", "guitar", "ukulele"];
@@ -231,7 +339,7 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
     `;
   }
   renderChordsTab() {
-    const chords = chunkCD2SD4KN_cjs.getChordsInSong(this.body, this.transpose);
+    const chords = chunkDSVCMPY5_cjs.getChordsInSong(this.body, this.transpose);
     const instruments = ["piano", "guitar", "ukulele"];
     return lit.html`
       <div class="toolbar">
@@ -308,8 +416,8 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
     </div>`;
   }
   renderSheet(body = this.body) {
-    const lines = chunkCD2SD4KN_cjs.parseChordPro(body, this.transpose);
-    const displayKey = this.songKey ? chunkCD2SD4KN_cjs.transposeNote(this.songKey, this.transpose) : "";
+    const lines = chunkDSVCMPY5_cjs.displayLines(chunkDSVCMPY5_cjs.parseChordPro(body, this.transpose), this.hasChords);
+    const displayKey = this.songKey ? chunkDSVCMPY5_cjs.transposeNote(this.songKey, this.transpose) : "";
     const offset = this.transpose !== 0 ? ` (${this.transpose > 0 ? "+" : ""}${this.transpose})` : "";
     const blocks = [];
     let cur = { type: null, label: null, lines: [] };
@@ -323,7 +431,7 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
     }
     if (cur.label || cur.lines.length) blocks.push(cur);
     return lit.html`
-      <div class="sheet">
+      <div class=${"sheet" + (this.hasChords ? "" : " lyrics-only")}>
         <div class="header">
           <div class="title">${this.title || "Untitled"}</div>
           <div class="meta">
@@ -341,10 +449,10 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
   }
   render() {
     if (this.readonly) {
-      const chords = chunkCD2SD4KN_cjs.getChordsInSong(this.body, this.transpose);
+      const chords = chunkDSVCMPY5_cjs.getChordsInSong(this.body, this.transpose);
       return lit.html`
         ${this.renderSheet()}
-        ${this.showDiagrams && chords.length ? lit.html`<div class="diagrams-label">Chords used — ${this.instrument}</div>
+        ${this.hasChords && this.showDiagrams && chords.length ? lit.html`<div class="diagrams-label">Chords used — ${this.instrument}</div>
               <div class="diagrams">
                 ${chords.map(
         (c) => lit.html`<chord-diagram .chord=${c} .instrument=${this.instrument}></chord-diagram>`
@@ -366,7 +474,7 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
               ></textarea>
               ${this.renderSheet()}
             </div>
-          ` : this.tab === "translit" ? this.renderTransliterationsTab() : this.renderChordsTab()}
+          ` : this.tab === "credits" ? this.renderCreditsTab() : this.tab === "music" ? this.renderMusicTab() : this.tab === "translit" ? this.renderTransliterationsTab() : this.renderChordsTab()}
     `;
   }
 };
@@ -483,10 +591,10 @@ exports.ChordSheet.styles = lit.css`
       margin-top: 0;
     }
     .blank {
-      height: 12px;
+      height: 10px;
     }
     .line {
-      margin-bottom: 12px;
+      margin-bottom: 6px;
       line-height: 1.15;
     }
     .seg {
@@ -507,6 +615,17 @@ exports.ChordSheet.styles = lit.css`
       white-space: pre;
       font-size: 16.5px;
       line-height: 1.5;
+    }
+    /* Lyrics-only (no official chords): drop the empty chord row and tighten the lines so only the
+       section breaks add vertical space. */
+    .sheet.lyrics-only .seg .chord {
+      display: none;
+    }
+    .sheet.lyrics-only .line {
+      margin-bottom: 1px;
+    }
+    .sheet.lyrics-only .seg .lyric {
+      line-height: 1.42;
     }
     .diagrams {
       margin-top: 18px;
@@ -610,28 +729,29 @@ exports.ChordSheet.styles = lit.css`
     .block[data-section] .section {
       margin-top: 0;
     }
-    /* Default web look: a coloured left-border cue only — no background fill, so lyric/chord text
-       stays fully readable. Apps still get the section type via [data-section] to colour as they
-       wish, and a faint fill can be opted into with --musically-section-fill (e.g. 8%). */
+    /* Each section gets a coloured left-border cue plus a faint background tint so verses, choruses,
+       etc. are visually distinct while text stays readable. The tint strength is tunable with
+       --musically-section-fill (default 9%); set it to 0% for a border-only look. */
     .block[data-section="chorus"] {
       border-left-color: var(--musically-accent, #1d4ed8);
-      background: color-mix(in srgb, var(--musically-accent, #1d4ed8) var(--musically-section-fill, 0%), transparent);
+      background: color-mix(in srgb, var(--musically-accent, #1d4ed8) var(--musically-section-fill, 9%), transparent);
     }
     .block[data-section="pre-chorus"] {
       border-left-color: var(--musically-section-prechorus, #b8791b);
-      background: color-mix(in srgb, var(--musically-section-prechorus, #b8791b) var(--musically-section-fill, 0%), transparent);
+      background: color-mix(in srgb, var(--musically-section-prechorus, #b8791b) var(--musically-section-fill, 9%), transparent);
     }
     .block[data-section="bridge"] {
       border-left-color: var(--musically-section-bridge, #7c3aed);
-      background: color-mix(in srgb, var(--musically-section-bridge, #7c3aed) var(--musically-section-fill, 0%), transparent);
+      background: color-mix(in srgb, var(--musically-section-bridge, #7c3aed) var(--musically-section-fill, 9%), transparent);
     }
     .block[data-section="intro"],
     .block[data-section="outro"] {
       border-left-color: var(--musically-muted, #8a8169);
-      background: color-mix(in srgb, var(--musically-muted, #8a8169) var(--musically-section-fill, 0%), transparent);
+      background: color-mix(in srgb, var(--musically-muted, #8a8169) var(--musically-section-fill, 9%), transparent);
     }
     .block[data-section="verse"] {
       border-left-color: color-mix(in srgb, var(--musically-text, #33312c) 25%, transparent);
+      background: color-mix(in srgb, var(--musically-text, #33312c) 4%, transparent);
     }
 
     .translit-head {
@@ -645,47 +765,117 @@ exports.ChordSheet.styles = lit.css`
       font-size: 14px;
       padding: 20px 0;
     }
+
+    /* Credits / Music metadata tabs */
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+    input.text-input {
+      font: inherit;
+      font-size: 14px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--musically-border, #d8cfb8);
+      background: var(--musically-paper, #fffdf8);
+      color: var(--musically-text, #33312c);
+      outline: none;
+    }
+    input.text-input:focus {
+      border-color: var(--musically-accent, #1d4ed8);
+    }
+    .check {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 4px 0 14px;
+      cursor: pointer;
+    }
+    .check input {
+      width: 18px;
+      height: 18px;
+      margin-top: 2px;
+      accent-color: var(--musically-accent, #1d4ed8);
+    }
+    .check .check-text {
+      font-size: 14px;
+      color: var(--musically-text, #33312c);
+    }
+    .check .check-text small {
+      display: block;
+      font-size: 12px;
+      color: var(--musically-muted, #8a8169);
+      margin-top: 2px;
+    }
   `;
-chunkCD2SD4KN_cjs.__decorateClass([
+chunkDSVCMPY5_cjs.__decorateClass([
   decorators_js.property()
 ], exports.ChordSheet.prototype, "body", 2);
-chunkCD2SD4KN_cjs.__decorateClass([
+chunkDSVCMPY5_cjs.__decorateClass([
   decorators_js.property()
 ], exports.ChordSheet.prototype, "title", 2);
-chunkCD2SD4KN_cjs.__decorateClass([
+chunkDSVCMPY5_cjs.__decorateClass([
   decorators_js.property()
 ], exports.ChordSheet.prototype, "artist", 2);
-chunkCD2SD4KN_cjs.__decorateClass([
+chunkDSVCMPY5_cjs.__decorateClass([
+  decorators_js.property()
+], exports.ChordSheet.prototype, "author", 2);
+chunkDSVCMPY5_cjs.__decorateClass([
+  decorators_js.property()
+], exports.ChordSheet.prototype, "composer", 2);
+chunkDSVCMPY5_cjs.__decorateClass([
+  decorators_js.property({ attribute: "music-director" })
+], exports.ChordSheet.prototype, "musicDirector", 2);
+chunkDSVCMPY5_cjs.__decorateClass([
   decorators_js.property({ attribute: "song-key" })
 ], exports.ChordSheet.prototype, "songKey", 2);
-chunkCD2SD4KN_cjs.__decorateClass([
+chunkDSVCMPY5_cjs.__decorateClass([
+  decorators_js.property({ type: Boolean, attribute: "has-chords" })
+], exports.ChordSheet.prototype, "hasChords", 2);
+chunkDSVCMPY5_cjs.__decorateClass([
+  decorators_js.property({ type: Number })
+], exports.ChordSheet.prototype, "tempo", 2);
+chunkDSVCMPY5_cjs.__decorateClass([
+  decorators_js.property({ attribute: "preferred-key" })
+], exports.ChordSheet.prototype, "preferredKey", 2);
+chunkDSVCMPY5_cjs.__decorateClass([
+  decorators_js.property()
+], exports.ChordSheet.prototype, "mode", 2);
+chunkDSVCMPY5_cjs.__decorateClass([
+  decorators_js.property({ attribute: "time-signature" })
+], exports.ChordSheet.prototype, "timeSignature", 2);
+chunkDSVCMPY5_cjs.__decorateClass([
+  decorators_js.property({ attribute: "rhythm-pattern" })
+], exports.ChordSheet.prototype, "rhythmPattern", 2);
+chunkDSVCMPY5_cjs.__decorateClass([
   decorators_js.property({ type: Number })
 ], exports.ChordSheet.prototype, "transpose", 2);
-chunkCD2SD4KN_cjs.__decorateClass([
+chunkDSVCMPY5_cjs.__decorateClass([
   decorators_js.property()
 ], exports.ChordSheet.prototype, "instrument", 2);
-chunkCD2SD4KN_cjs.__decorateClass([
+chunkDSVCMPY5_cjs.__decorateClass([
   decorators_js.property({ type: Boolean, attribute: "show-diagrams" })
 ], exports.ChordSheet.prototype, "showDiagrams", 2);
-chunkCD2SD4KN_cjs.__decorateClass([
+chunkDSVCMPY5_cjs.__decorateClass([
   decorators_js.property({ type: Boolean })
 ], exports.ChordSheet.prototype, "readonly", 2);
-chunkCD2SD4KN_cjs.__decorateClass([
+chunkDSVCMPY5_cjs.__decorateClass([
   decorators_js.property()
 ], exports.ChordSheet.prototype, "language", 2);
-chunkCD2SD4KN_cjs.__decorateClass([
+chunkDSVCMPY5_cjs.__decorateClass([
   decorators_js.property({ attribute: false })
 ], exports.ChordSheet.prototype, "languages", 2);
-chunkCD2SD4KN_cjs.__decorateClass([
+chunkDSVCMPY5_cjs.__decorateClass([
   decorators_js.property({ attribute: false })
 ], exports.ChordSheet.prototype, "transliterations", 2);
-chunkCD2SD4KN_cjs.__decorateClass([
+chunkDSVCMPY5_cjs.__decorateClass([
   decorators_js.state()
 ], exports.ChordSheet.prototype, "tab", 2);
-chunkCD2SD4KN_cjs.__decorateClass([
+chunkDSVCMPY5_cjs.__decorateClass([
   decorators_js.state()
 ], exports.ChordSheet.prototype, "xlitTab", 2);
-exports.ChordSheet = chunkCD2SD4KN_cjs.__decorateClass([
+exports.ChordSheet = chunkDSVCMPY5_cjs.__decorateClass([
   decorators_js.customElement("chord-sheet")
 ], exports.ChordSheet);
 //# sourceMappingURL=elements.cjs.map

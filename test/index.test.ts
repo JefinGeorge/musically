@@ -12,6 +12,7 @@ import {
   parseLine,
   parseChordPro,
   getChordsInSong,
+  displayLines,
   getDiagramSVG,
   type SheetLine,
 } from "../src/index.js";
@@ -295,6 +296,27 @@ describe("getChordsInSong", () => {
 
   it("reflects transposition in the collected chords", () => {
     expect(getChordsInSong("[C]a [G]b", 2)).toEqual(["D", "A"]);
+  });
+});
+
+describe("displayLines", () => {
+  it("returns the lines unchanged when the song has chords", () => {
+    const lines = parseChordPro("# Verse\n[C]Hello\n\nplain");
+    expect(displayLines(lines, true)).toEqual(lines);
+  });
+
+  it("strips chords and drops blank lines when lyrics-only", () => {
+    const lines = parseChordPro("# Verse\n[C]Hello\n\n[G]world");
+    const out = displayLines(lines, false);
+    // No blank lines survive.
+    expect(out.some((l) => l.type === "blank")).toBe(false);
+    // Section header is kept.
+    expect(out.find((l) => l.type === "section")).toBeTruthy();
+    // Every lyric segment has its chord dropped.
+    const chords = out
+      .filter((l): l is Extract<SheetLine, { type: "lyric" }> => l.type === "lyric")
+      .flatMap((l) => l.segments.map((s) => s.chord));
+    expect(chords.every((c) => c === null)).toBe(true);
   });
 });
 

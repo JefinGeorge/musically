@@ -75,6 +75,15 @@ declare function parseLine(line: string): ChordSegment[];
  * Pass a `transpose` value to shift every chord in the output.
  */
 declare function parseChordPro(text: string, transpose?: number): SheetLine[];
+/**
+ * Adapt parsed lines for display based on whether the song officially carries chords.
+ *
+ * When `hasChords` is true the lines are returned unchanged. When false the song is treated as
+ * lyrics-only: any embedded [chords] are dropped (ignored, not shown) and the blank lines that add
+ * extra breathing room between chorded lyric lines are removed — so lyrics read tightly and the only
+ * vertical space comes from the section breaks (verse / pre-chorus / chorus …).
+ */
+declare function displayLines(lines: SheetLine[], hasChords: boolean): SheetLine[];
 /** Collect the unique chords used in a song, in order of first appearance. */
 declare function getChordsInSong(text: string, transpose?: number): string[];
 /**
@@ -84,4 +93,4 @@ declare function getChordsInSong(text: string, transpose?: number): string[];
  */
 declare function getDiagramSVG(symbol: string, instrument?: Instrument, options?: DiagramOptions): string;
 
-export { type ChordSegment, type DiagramOptions, GUITAR_SHAPES, type Instrument, type ParsedChord, SECTION_TYPES, SHARP_NOTES, SONG_KEYS, type SectionType, type SheetLine, UKULELE_SHAPES, chordNotes, getChordsInSong, getDiagramSVG, getShape, parseChord, parseChordPro, parseLine, qualityIntervals, sectionTypeFromLabel, transposeChord, transposeNote };
+export { type ChordSegment, type DiagramOptions, GUITAR_SHAPES, type Instrument, type ParsedChord, SECTION_TYPES, SHARP_NOTES, SONG_KEYS, type SectionType, type SheetLine, UKULELE_SHAPES, chordNotes, displayLines, getChordsInSong, getDiagramSVG, getShape, parseChord, parseChordPro, parseLine, qualityIntervals, sectionTypeFromLabel, transposeChord, transposeNote };

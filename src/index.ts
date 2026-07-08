@@ -272,6 +272,28 @@ export function parseChordPro(text: string, transpose = 0): SheetLine[] {
   });
 }
 
+/**
+ * Adapt parsed lines for display based on whether the song officially carries chords.
+ *
+ * When `hasChords` is true the lines are returned unchanged. When false the song is treated as
+ * lyrics-only: any embedded [chords] are dropped (ignored, not shown) and the blank lines that add
+ * extra breathing room between chorded lyric lines are removed — so lyrics read tightly and the only
+ * vertical space comes from the section breaks (verse / pre-chorus / chorus …).
+ */
+export function displayLines(lines: SheetLine[], hasChords: boolean): SheetLine[] {
+  if (hasChords) return lines;
+  const out: SheetLine[] = [];
+  for (const line of lines) {
+    if (line.type === "blank") continue; // spacing comes from section blocks, not inter-line blanks
+    if (line.type === "lyric") {
+      out.push({ type: "lyric", segments: line.segments.map((s) => ({ chord: null, text: s.text })) });
+    } else {
+      out.push(line);
+    }
+  }
+  return out;
+}
+
 /** Collect the unique chords used in a song, in order of first appearance. */
 export function getChordsInSong(text: string, transpose = 0): string[] {
   const seen = new Set<string>();

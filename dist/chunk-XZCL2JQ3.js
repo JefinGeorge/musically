@@ -320,6 +320,19 @@ function parseChordPro(text, transpose = 0) {
     return { type: "lyric", segments };
   });
 }
+function displayLines(lines, hasChords) {
+  if (hasChords) return lines;
+  const out = [];
+  for (const line of lines) {
+    if (line.type === "blank") continue;
+    if (line.type === "lyric") {
+      out.push({ type: "lyric", segments: line.segments.map((s) => ({ chord: null, text: s.text })) });
+    } else {
+      out.push(line);
+    }
+  }
+  return out;
+}
 function getChordsInSong(text, transpose = 0) {
   const seen = /* @__PURE__ */ new Set();
   const list = [];
@@ -407,6 +420,6 @@ function getDiagramSVG(symbol, instrument = "piano", options = {}) {
   return shape ? fretboardSVG(shape, o) : placeholderSVG(o);
 }
 
-export { GUITAR_SHAPES, SECTION_TYPES, SHARP_NOTES, SONG_KEYS, UKULELE_SHAPES, __decorateClass, chordNotes, getChordsInSong, getDiagramSVG, getShape, parseChord, parseChordPro, parseLine, qualityIntervals, sectionTypeFromLabel, transposeChord, transposeNote };
-//# sourceMappingURL=chunk-3SPJZ2S4.js.map
-//# sourceMappingURL=chunk-3SPJZ2S4.js.map
+export { GUITAR_SHAPES, SECTION_TYPES, SHARP_NOTES, SONG_KEYS, UKULELE_SHAPES, __decorateClass, chordNotes, displayLines, getChordsInSong, getDiagramSVG, getShape, parseChord, parseChordPro, parseLine, qualityIntervals, sectionTypeFromLabel, transposeChord, transposeNote };
+//# sourceMappingURL=chunk-XZCL2JQ3.js.map
+//# sourceMappingURL=chunk-XZCL2JQ3.js.map

@@ -29,10 +29,31 @@ declare class ChordSheet extends LitElement {
     body: string;
     /** Song title shown in the header. */
     title: string;
-    /** Artist / author. */
+    /** Performing artist (free text). */
     artist: string;
+    /** Lyricist / author (free text). */
+    author: string;
+    /** Composer (free text). */
+    composer: string;
+    /** Music director (free text). */
+    musicDirector: string;
     /** Original key; transposes along with the song. */
     songKey: string;
+    /**
+     * Whether the song *officially* carries embedded music chords. When false the song is treated as
+     * lyrics-only: any [chords] in the body are ignored on display and inter-line spacing is tightened.
+     */
+    hasChords: boolean;
+    /** Beats per minute (0 = unset). */
+    tempo: number;
+    /** Preferred performance key (independent of the transposable original `songKey`). */
+    preferredKey: string;
+    /** Tonality: "major" | "minor" | "". */
+    mode: string;
+    /** Time signature, e.g. "4/4", "6/8". */
+    timeSignature: string;
+    /** Free-text rhythm / strumming pattern. */
+    rhythmPattern: string;
     /** Semitones to shift all chords. */
     transpose: number;
     /** Diagram instrument. */
@@ -63,6 +84,10 @@ declare class ChordSheet extends LitElement {
     private renderLangSelect;
     private renderFields;
     private renderTabs;
+    /** A labelled free-text field bound to one string property, emitting `change` on input. */
+    private renderTextField;
+    private renderCreditsTab;
+    private renderMusicTab;
     private renderTransposeToolbar;
     private renderChordsTab;
     private renderTransliterationsTab;
