@@ -9,7 +9,9 @@ Musically ships as standard **Web Components**, so it drops into **React, Angula
 ## Features
 
 - **Chord-over-lyric sheets** — write lyrics with inline chords (ChordPro style) and render them neatly aligned.
-- **Structured sections** — lines starting with `#` become labelled sections (intro, verse, pre-chorus, chorus, bridge, outro), inferred from the heading and available for styling.
+- **Structured sections** — lines starting with `#` become labelled sections (intro, verse, pre-chorus, chorus, bridge, outro), inferred from the heading and rendered with a faint per-type background tint.
+- **Credits & performance metadata** *(v2.2)* — capture author, composer, music director, and performing artist, plus tempo, preferred key, tonality, time signature, and rhythm pattern, in dedicated **Credits** and **Music** tabs.
+- **Official "has chords" flag** *(v2.2)* — mark whether a song genuinely carries chords. Lyrics-only songs ignore any embedded `[chords]` on display and render tightly, with vertical space only between sections.
 - **Transpose** — shift an entire song up or down by semitones, with the key updated automatically.
 - **Switchable diagrams** — piano, guitar, and ukulele. Piano is computed from music theory (works for *any* chord); guitar/ukulele use a built-in shape library.
 - **Multi-language & transliterations** — tag a sheet with its language, offer a language list, and attach alternate-script versions shown in their own tab.
@@ -42,9 +44,12 @@ npm install musically
   song-key="G"
   transpose="0"
   instrument="guitar"
+  has-chords
   body="A[G]mazing [G7]grace how [C]sweet the [G]sound"
 ></chord-sheet>
 ```
+
+> `has-chords` tells Musically the song genuinely carries chords, so they're rendered. Omit it for a **lyrics-only** song — any `[chords]` in the body are then ignored on display.
 
 ### React (v19+)
 
@@ -61,6 +66,7 @@ export function Song() {
       song-key="G"
       transpose={2}
       instrument="piano"
+      has-chords
       body={`# Verse 1
 A[G]mazing [G7]grace how [C]sweet the [G]sound
 That [G]saved a [Em]wretch like [D]me`}
@@ -106,6 +112,7 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
       [attr.title]="title"
       [attr.transpose]="transpose"
       instrument="ukulele"
+      has-chords
       [attr.body]="body"
     ></chord-sheet>
   `,
@@ -131,11 +138,20 @@ The full editor + sheet renderer.
 |---|---|---|---|
 | `body` | `string` | `""` | Lyrics with inline `[chords]`. Lines starting with `#` become section labels. |
 | `title` | `string` | `""` | Song title shown in the header. |
-| `artist` | `string` | `""` | Artist / author. |
+| `artist` | `string` | `""` | Performing artist. |
+| `author` | `string` | `""` | Lyricist / author. *(v2.2)* |
+| `composer` | `string` | `""` | Composer. *(v2.2)* |
+| `music-director` | `string` | `""` | Music director. *(v2.2)* |
 | `song-key` | `string` | `""` | Original key (transposes along with the song). |
+| `has-chords` | `boolean` | `false` | Whether the song *officially* carries chords. When `false`, embedded `[chords]` are ignored on display and inter-line spacing is tightened (lyrics-only). *(v2.2)* |
+| `tempo` | `number` | `0` | Beats per minute (`0` = unset). *(v2.2)* |
+| `preferred-key` | `string` | `""` | Preferred performance key (independent of the transposable `song-key`). *(v2.2)* |
+| `mode` | `"major" \| "minor" \| ""` | `""` | Tonality. *(v2.2)* |
+| `time-signature` | `string` | `""` | e.g. `4/4`, `6/8`. *(v2.2)* |
+| `rhythm-pattern` | `string` | `""` | Free-text strumming / rhythm pattern. *(v2.2)* |
 | `transpose` | `number` | `0` | Semitones to shift all chords. |
 | `instrument` | `"piano" \| "guitar" \| "ukulele"` | `"piano"` | Diagram instrument. |
-| `show-diagrams` | `boolean` | `true` | Toggle the "chords used" diagram strip. |
+| `show-diagrams` | `boolean` | `true` | Toggle the "chords used" diagram strip (only shown when `has-chords` is set). |
 | `readonly` | `boolean` | `false` | Hide the editor and show only the sheet. |
 | `language` | `string` | `""` | BCP-47 language of the sheet's lyrics. |
 | `languages` | `LanguageOption[]` | `[]` | Selectable languages for the editor's language dropdown. **Property only** (set via JS, not an attribute). |
@@ -143,9 +159,9 @@ The full editor + sheet renderer.
 
 `LanguageOption` is `{ code: string; name: string }`; `Transliteration` is `{ language: string; body: string }`.
 
-The editor is organised into **Editor**, **Transliterations**, and **Chords** tabs. Section labels (lines starting with `#`) are classified as `intro`, `verse`, `pre-chorus`, `chorus`, `bridge`, `outro`, or generic `section`.
+The editor is organised into **Editor**, **Credits**, **Music**, **Transliterations**, and **Chords** tabs. Section labels (lines starting with `#`) are classified as `intro`, `verse`, `pre-chorus`, `chorus`, `bridge`, `outro`, or generic `section`.
 
-**Event:** `change` — fired when the body or settings change. `event.detail` contains `{ body, title, artist, language, songKey, transpose, instrument, transliterations }`.
+**Event:** `change` — fired when the body or any field changes. `event.detail` contains `{ body, title, artist, author, composer, musicDirector, language, songKey, hasChords, tempo, preferredKey, mode, timeSignature, rhythmPattern, transpose, instrument, transliterations }`.
 
 ### `<chord-diagram>`
 
@@ -171,15 +187,23 @@ import {
   transposeChord,
   chordNotes,
   parseChordPro,
+  displayLines,
+  sectionTypeFromLabel,
   getDiagramSVG,
 } from 'musically';
 
 transposeChord('Am7', 2);        // → "Bm7"
 chordNotes('Cmaj7');             // → ["C", "E", "G", "B"]
-parseChordPro('[C]Hello [G]world');
+
+const lines = parseChordPro('# Verse\n[C]Hello [G]world');
 // → structured lines/segments you can render however you like
 
-getDiagramSVG('G', 'guitar');    // → SVG markup string
+// Adapt lines for a lyrics-only song: drops chords + blank lines so only
+// section breaks add space (pass `true` to keep chords unchanged).
+displayLines(lines, false);
+
+sectionTypeFromLabel('Pre-Chorus 2'); // → "pre-chorus"
+getDiagramSVG('G', 'guitar');          // → SVG markup string
 ```
 
 ---
@@ -194,6 +218,7 @@ chord-sheet {
   --musically-paper:  #fffdf8;   /* sheet background */
   --musically-text:   #33312c;   /* lyric color */
   --musically-font:   'Georgia', serif;
+  --musically-section-fill: 9%;  /* section background tint strength; 0% = border only */
 }
 ```
 
