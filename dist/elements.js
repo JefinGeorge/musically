@@ -142,7 +142,7 @@ var ChordSheet = class extends LitElement {
   addTransliteration() {
     const used = new Set(this.transliterations.map((t) => t.language));
     const next = this.languages.find((l) => !used.has(l.code) && l.code !== this.language);
-    this.transliterations = [...this.transliterations, { language: next?.code ?? "", body: "" }];
+    this.transliterations = [...this.transliterations, { language: next?.code ?? "", body: "", title: "" }];
     this.xlitTab = this.transliterations.length - 1;
     this.emitChange();
   }
@@ -382,6 +382,15 @@ var ChordSheet = class extends LitElement {
         <button class="tab" @click=${() => this.addTransliteration()}>+ Add</button>
       </div>
       <div class="translit-head">
+        <label class="field grow">
+          Title
+          <input
+            class="title-input"
+            .value=${active.title ?? ""}
+            placeholder="Song title in this script"
+            @input=${(e) => this.updateTransliteration(activeIdx, { title: e.target.value })}
+          />
+        </label>
         <label class="field">
           Language
           ${this.renderLangSelect(active.language, (v) => this.updateTransliteration(activeIdx, { language: v }))}

@@ -8,10 +8,12 @@ interface LanguageOption {
     code: string;
     name: string;
 }
-/** An alternate-script version of the lyrics: its own language + ChordPro body. */
+/** An alternate-script version of the lyrics: its own language + ChordPro body, and an optional
+ *  title rendered in that script (shown by the reader when viewing this transliteration). */
 interface Transliteration {
     language: string;
     body: string;
+    title?: string;
 }
 declare class ChordDiagram extends LitElement {
     /** Chord symbol, e.g. "Cmaj7", "F#m", "D/F#". */
