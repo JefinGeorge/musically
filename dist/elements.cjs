@@ -162,12 +162,10 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
   }
   // ── Small render helpers ──────────────────────────────────────────
   renderLangSelect(value, onChange) {
-    return lit.html`<select
-      .value=${value}
-      @change=${(e) => onChange(e.target.value)}
-    >
-      ${value && !this.languages.some((l) => l.code === value) ? lit.html`<option value=${value}>${value}</option>` : lit.nothing}
-      ${this.languages.map((l) => lit.html`<option value=${l.code}>${l.name}</option>`)}
+    const known = this.languages.some((l) => l.code === value);
+    return lit.html`<select @change=${(e) => onChange(e.target.value)}>
+      ${value && !known ? lit.html`<option value=${value} .selected=${true}>${value}</option>` : lit.nothing}
+      ${this.languages.map((l) => lit.html`<option value=${l.code} .selected=${l.code === value}>${l.name}</option>`)}
     </select>`;
   }
   renderFields() {
@@ -195,14 +193,13 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
         <label class="field">
           Key
           <select
-            .value=${this.songKey}
             @change=${(e) => {
       this.songKey = e.target.value;
       this.emitChange();
     }}
           >
-            <option value="">—</option>
-            ${chunkDSVCMPY5_cjs.SONG_KEYS.map((k) => lit.html`<option value=${k}>${k}</option>`)}
+            <option value="" .selected=${!this.songKey}>—</option>
+            ${chunkDSVCMPY5_cjs.SONG_KEYS.map((k) => lit.html`<option value=${k} .selected=${k === this.songKey}>${k}</option>`)}
           </select>
         </label>
       </div>
@@ -286,28 +283,26 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
         <label class="field">
           Preferred key
           <select
-            .value=${this.preferredKey}
             @change=${(e) => {
       this.preferredKey = e.target.value;
       this.emitChange();
     }}
           >
-            <option value="">—</option>
-            ${chunkDSVCMPY5_cjs.SONG_KEYS.map((k) => lit.html`<option value=${k}>${k}</option>`)}
+            <option value="" .selected=${!this.preferredKey}>—</option>
+            ${chunkDSVCMPY5_cjs.SONG_KEYS.map((k) => lit.html`<option value=${k} .selected=${k === this.preferredKey}>${k}</option>`)}
           </select>
         </label>
         <label class="field">
           Tonality
           <select
-            .value=${this.mode}
             @change=${(e) => {
       this.mode = e.target.value;
       this.emitChange();
     }}
           >
-            <option value="">—</option>
-            <option value="major">Major</option>
-            <option value="minor">Minor</option>
+            <option value="" .selected=${!this.mode}>—</option>
+            <option value="major" .selected=${this.mode === "major"}>Major</option>
+            <option value="minor" .selected=${this.mode === "minor"}>Minor</option>
           </select>
         </label>
         ${this.renderTextField("Time signature", this.timeSignature, (v) => this.timeSignature = v, "e.g. 4/4")}

@@ -567,14 +567,15 @@ export class ChordSheet extends LitElement {
 
   // ── Small render helpers ──────────────────────────────────────────
   private renderLangSelect(value: string, onChange: (v: string) => void) {
-    return html`<select
-      .value=${value}
-      @change=${(e: Event) => onChange((e.target as HTMLSelectElement).value)}
-    >
-      ${value && !this.languages.some((l) => l.code === value)
-        ? html`<option value=${value}>${value}</option>`
+    // Mark the chosen <option> with `.selected` rather than binding the select's `.value`: a native
+    // <select>'s value can't be set before its options exist (and options may load async), so a
+    // restored language/key would otherwise not show on first render.
+    const known = this.languages.some((l) => l.code === value);
+    return html`<select @change=${(e: Event) => onChange((e.target as HTMLSelectElement).value)}>
+      ${value && !known
+        ? html`<option value=${value} .selected=${true}>${value}</option>`
         : nothing}
-      ${this.languages.map((l) => html`<option value=${l.code}>${l.name}</option>`)}
+      ${this.languages.map((l) => html`<option value=${l.code} .selected=${l.code === value}>${l.name}</option>`)}
     </select>`;
   }
 
@@ -603,14 +604,13 @@ export class ChordSheet extends LitElement {
         <label class="field">
           Key
           <select
-            .value=${this.songKey}
             @change=${(e: Event) => {
               this.songKey = (e.target as HTMLSelectElement).value;
               this.emitChange();
             }}
           >
-            <option value="">—</option>
-            ${SONG_KEYS.map((k) => html`<option value=${k}>${k}</option>`)}
+            <option value="" .selected=${!this.songKey}>—</option>
+            ${SONG_KEYS.map((k) => html`<option value=${k} .selected=${k === this.songKey}>${k}</option>`)}
           </select>
         </label>
       </div>
@@ -698,28 +698,26 @@ export class ChordSheet extends LitElement {
         <label class="field">
           Preferred key
           <select
-            .value=${this.preferredKey}
             @change=${(e: Event) => {
               this.preferredKey = (e.target as HTMLSelectElement).value;
               this.emitChange();
             }}
           >
-            <option value="">—</option>
-            ${SONG_KEYS.map((k) => html`<option value=${k}>${k}</option>`)}
+            <option value="" .selected=${!this.preferredKey}>—</option>
+            ${SONG_KEYS.map((k) => html`<option value=${k} .selected=${k === this.preferredKey}>${k}</option>`)}
           </select>
         </label>
         <label class="field">
           Tonality
           <select
-            .value=${this.mode}
             @change=${(e: Event) => {
               this.mode = (e.target as HTMLSelectElement).value;
               this.emitChange();
             }}
           >
-            <option value="">—</option>
-            <option value="major">Major</option>
-            <option value="minor">Minor</option>
+            <option value="" .selected=${!this.mode}>—</option>
+            <option value="major" .selected=${this.mode === "major"}>Major</option>
+            <option value="minor" .selected=${this.mode === "minor"}>Minor</option>
           </select>
         </label>
         ${this.renderTextField("Time signature", this.timeSignature, (v) => (this.timeSignature = v), "e.g. 4/4")}
