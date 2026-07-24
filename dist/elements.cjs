@@ -339,7 +339,7 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
     const chords = chunkDSVCMPY5_cjs.getChordsInSong(this.body, this.transpose);
     const instruments = ["piano", "guitar", "ukulele"];
     return lit.html`
-      ${chords.length ? lit.html`<div class="meta-grid">
+      ${chords.length ? lit.html`<div class="meta-grid chords-credit">
             ${this.renderTextField(
       "Chords contributed by",
       this.chordsContributedBy,
@@ -347,7 +347,7 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
       "Credit the chords contributor"
     )}
           </div>` : lit.nothing}
-      <div class="toolbar">
+      <div class="toolbar chords-tools">
         <span class="label">Diagrams for</span>
         <div class="group">
           ${instruments.map(
@@ -794,6 +794,14 @@ exports.ChordSheet.styles = lit.css`
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 12px;
+    }
+    /* Chords tab: breathing room under the "Chords contributed by" field
+       and the "Diagrams for" toolbar before the diagram strip. */
+    .meta-grid.chords-credit {
+      margin-bottom: 20px;
+    }
+    .toolbar.chords-tools {
+      margin-bottom: 20px;
     }
     input.text-input {
       font: inherit;

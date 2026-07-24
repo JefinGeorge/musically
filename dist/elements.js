@@ -337,7 +337,7 @@ var ChordSheet = class extends LitElement {
     const chords = getChordsInSong(this.body, this.transpose);
     const instruments = ["piano", "guitar", "ukulele"];
     return html`
-      ${chords.length ? html`<div class="meta-grid">
+      ${chords.length ? html`<div class="meta-grid chords-credit">
             ${this.renderTextField(
       "Chords contributed by",
       this.chordsContributedBy,
@@ -345,7 +345,7 @@ var ChordSheet = class extends LitElement {
       "Credit the chords contributor"
     )}
           </div>` : nothing}
-      <div class="toolbar">
+      <div class="toolbar chords-tools">
         <span class="label">Diagrams for</span>
         <div class="group">
           ${instruments.map(
@@ -792,6 +792,14 @@ ChordSheet.styles = css`
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 12px;
+    }
+    /* Chords tab: breathing room under the "Chords contributed by" field
+       and the "Diagrams for" toolbar before the diagram strip. */
+    .meta-grid.chords-credit {
+      margin-bottom: 20px;
+    }
+    .toolbar.chords-tools {
+      margin-bottom: 20px;
     }
     input.text-input {
       font: inherit;
