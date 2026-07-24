@@ -85,6 +85,9 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
     this.composer = "";
     this.musicDirector = "";
     this.chordsContributedBy = "";
+    this.copyright = "";
+    this.license = "";
+    this.permissions = "";
     this.songKey = "";
     this.hasChords = false;
     this.tempo = 0;
@@ -113,6 +116,9 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
           composer: this.composer,
           musicDirector: this.musicDirector,
           chordsContributedBy: this.chordsContributedBy,
+          copyright: this.copyright,
+          license: this.license,
+          permissions: this.permissions,
           language: this.language,
           songKey: this.songKey,
           hasChords: this.hasChords,
@@ -213,7 +219,8 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
       { id: "credits", label: "Credits" },
       { id: "music", label: "Music" },
       { id: "translit", label: `Transliterations${this.transliterations.length ? ` (${this.transliterations.length})` : ""}` },
-      { id: "chords", label: "Chords" }
+      { id: "chords", label: "Chords" },
+      { id: "permissions", label: "Permissions" }
     ];
     return lit.html`<div class="tabs">
       ${tabs.map(
@@ -248,6 +255,14 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
       ${this.renderTextField("Composer", this.composer, (v) => this.composer = v, "e.g. Felix Mendelssohn")}
       ${this.renderTextField("Music director", this.musicDirector, (v) => this.musicDirector = v)}
       ${this.renderTextField("Performing artist", this.artist, (v) => this.artist = v)}
+    </div>`;
+  }
+  // ── Permissions tab (copyright / license / usage) — each a full line in the credits footer ──
+  renderPermissionsTab() {
+    return lit.html`<div class="perm-fields">
+      ${this.renderTextField("Copyright", this.copyright, (v) => this.copyright = v, "e.g. \xA9 2026 World Healing Music")}
+      ${this.renderTextField("License", this.license, (v) => this.license = v, "e.g. CCLI License #1234567")}
+      ${this.renderTextField("Permissions", this.permissions, (v) => this.permissions = v, "e.g. Used by permission.")}
     </div>`;
   }
   // ── Music tab (chords flag + performance metadata) ──
@@ -438,6 +453,24 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
     )}
     </div>`;
   }
+  /**
+   * Credits / licensing footer shown as fine print under the lyrics. Each line appears only when its
+   * source field is non-empty. Author/composer get a prefix; copyright/permissions/license are shown
+   * verbatim as entered (docs/21).
+   */
+  renderCreditsFooter() {
+    const lines = [
+      this.author.trim() ? `Written by ${this.author.trim()}` : "",
+      this.composer.trim() ? `Composed by ${this.composer.trim()}` : "",
+      this.copyright.trim(),
+      this.permissions.trim(),
+      this.license.trim()
+    ].filter((l) => l);
+    if (!lines.length) return lit.nothing;
+    return lit.html`<div class="credits-footer">
+      ${lines.map((l) => lit.html`<div class="credit-line">${l}</div>`)}
+    </div>`;
+  }
   renderSheet(body = this.body) {
     const lines = chunkDSVCMPY5_cjs.displayLines(chunkDSVCMPY5_cjs.parseChordPro(body, this.transpose), this.hasChords);
     const displayKey = this.songKey ? chunkDSVCMPY5_cjs.transposeNote(this.songKey, this.transpose) : "";
@@ -467,6 +500,7 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
             ${b.lines.map((line) => this.renderLine(line))}
           </div>`
     )}
+        ${this.renderCreditsFooter()}
       </div>
     `;
   }
@@ -497,7 +531,7 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
               ></textarea>
               ${this.renderSheet()}
             </div>
-          ` : this.tab === "credits" ? this.renderCreditsTab() : this.tab === "music" ? this.renderMusicTab() : this.tab === "translit" ? this.renderTransliterationsTab() : this.renderChordsTab()}
+          ` : this.tab === "credits" ? this.renderCreditsTab() : this.tab === "music" ? this.renderMusicTab() : this.tab === "translit" ? this.renderTransliterationsTab() : this.tab === "chords" ? this.renderChordsTab() : this.renderPermissionsTab()}
     `;
   }
 };
@@ -803,6 +837,24 @@ exports.ChordSheet.styles = lit.css`
     .toolbar.chords-tools {
       margin-bottom: 20px;
     }
+    /* Permissions tab: full-width stacked lines (copyright / license / permissions). */
+    .perm-fields {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    /* Credits / licensing footer under the lyrics — fine print. */
+    .credits-footer {
+      margin-top: 18px;
+      padding-top: 10px;
+      border-top: 1px solid var(--musically-border, #e4dcc8);
+      font-size: 11px;
+      line-height: 1.5;
+      color: var(--musically-muted, #8a8169);
+    }
+    .credit-line {
+      margin: 1px 0;
+    }
     input.text-input {
       font: inherit;
       font-size: 14px;
@@ -861,6 +913,15 @@ chunkDSVCMPY5_cjs.__decorateClass([
 chunkDSVCMPY5_cjs.__decorateClass([
   decorators_js.property({ attribute: "chords-contributed-by" })
 ], exports.ChordSheet.prototype, "chordsContributedBy", 2);
+chunkDSVCMPY5_cjs.__decorateClass([
+  decorators_js.property()
+], exports.ChordSheet.prototype, "copyright", 2);
+chunkDSVCMPY5_cjs.__decorateClass([
+  decorators_js.property()
+], exports.ChordSheet.prototype, "license", 2);
+chunkDSVCMPY5_cjs.__decorateClass([
+  decorators_js.property()
+], exports.ChordSheet.prototype, "permissions", 2);
 chunkDSVCMPY5_cjs.__decorateClass([
   decorators_js.property({ attribute: "song-key" })
 ], exports.ChordSheet.prototype, "songKey", 2);

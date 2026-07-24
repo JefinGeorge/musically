@@ -382,4 +382,62 @@ describe("<chord-sheet>", () => {
     expect(el.chordsContributedBy).toBe("John Doe");
     expect(detail.chordsContributedBy).toBe("John Doe");
   });
+
+  it("edits Copyright / License / Permissions in the Permissions tab and emits them", async () => {
+    await mount(el);
+    let detail: any = null;
+    el.addEventListener("change", (e) => (detail = (e as CustomEvent).detail));
+
+    const permTab = [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>(".tab")].find(
+      (b) => b.textContent?.trim() === "Permissions"
+    )!;
+    permTab.click();
+    await el.updateComplete;
+
+    const [copyright, license, permissions] = [
+      ...el.shadowRoot!.querySelectorAll<HTMLInputElement>(".perm-fields input.text-input"),
+    ];
+    copyright.value = "© 2026 World Healing Music";
+    copyright.dispatchEvent(new Event("input"));
+    license.value = "CCLI License #1234567";
+    license.dispatchEvent(new Event("input"));
+    permissions.value = "Used by permission.";
+    permissions.dispatchEvent(new Event("input"));
+    await el.updateComplete;
+
+    expect(el.copyright).toBe("© 2026 World Healing Music");
+    expect(el.license).toBe("CCLI License #1234567");
+    expect(el.permissions).toBe("Used by permission.");
+    expect(detail.copyright).toBe("© 2026 World Healing Music");
+    expect(detail.license).toBe("CCLI License #1234567");
+    expect(detail.permissions).toBe("Used by permission.");
+  });
+
+  it("renders the credits footer under the lyrics — non-empty lines only, in order", async () => {
+    el.readonly = true;
+    el.body = "Amazing grace";
+    el.author = "John Newton";
+    el.composer = ""; // omitted → no "Composed by" line
+    el.copyright = "© 2026 World Healing Music";
+    el.permissions = "Used by permission.";
+    el.license = "CCLI License #1234567";
+    await mount(el);
+
+    const lines = [...el.shadowRoot!.querySelectorAll(".credits-footer .credit-line")].map((n) =>
+      n.textContent?.trim(),
+    );
+    expect(lines).toEqual([
+      "Written by John Newton",
+      "© 2026 World Healing Music",
+      "Used by permission.",
+      "CCLI License #1234567",
+    ]);
+  });
+
+  it("omits the credits footer entirely when no credit/licensing fields are set", async () => {
+    el.readonly = true;
+    el.body = "Amazing grace";
+    await mount(el);
+    expect(el.shadowRoot!.querySelector(".credits-footer")).toBeNull();
+  });
 });

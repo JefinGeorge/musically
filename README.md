@@ -16,6 +16,7 @@ Musically ships as standard **Web Components**, so it drops into **React, Angula
 - **Switchable diagrams** — piano, guitar, and ukulele. Piano is computed from music theory (works for *any* chord); guitar/ukulele use a built-in shape library.
 - **Multi-language & transliterations** — tag a sheet with its language, offer a language list, and attach alternate-script versions shown in their own tab. Each transliteration can credit its author via **Transliterated by** *(v2.4)*.
 - **Contributor credits** *(v2.4)* — credit a chords contributor via **Chords contributed by** in the Chords tab (shown only when the song has chords).
+- **Permissions & credits footer** *(v2.5)* — a **Permissions** tab collects `copyright`, `license`, and `permissions` lines; the reader renders a fine-print footer under the lyrics with each non-empty line — `Written by …`, `Composed by …`, then the copyright / permissions / license lines verbatim.
 - **Performance & print views** — a clean, large reading layout for live use.
 - **Themeable** — restyle everything through CSS custom properties.
 - **Headless core** — use the theory engine on its own, no UI required.
@@ -144,6 +145,9 @@ The full editor + sheet renderer.
 | `composer` | `string` | `""` | Composer. *(v2.2)* |
 | `music-director` | `string` | `""` | Music director. *(v2.2)* |
 | `chords-contributed-by` | `string` | `""` | Credit for the person who contributed the chords. Shown in the Chords tab only when the song has chords. *(v2.4)* |
+| `copyright` | `string` | `""` | Copyright line, shown verbatim in the credits footer (e.g. `© 2026 World Healing Music`). Collected in the Permissions tab. *(v2.5)* |
+| `license` | `string` | `""` | Licensing line, shown verbatim in the credits footer (e.g. `CCLI License #1234567`). Permissions tab. *(v2.5)* |
+| `permissions` | `string` | `""` | Usage-permission line, shown verbatim in the credits footer (e.g. `Used by permission.`). Permissions tab. *(v2.5)* |
 | `song-key` | `string` | `""` | Original key (transposes along with the song). |
 | `has-chords` | `boolean` | `false` | Whether the song *officially* carries chords. When `false`, embedded `[chords]` are ignored on display and inter-line spacing is tightened (lyrics-only). *(v2.2)* |
 | `tempo` | `number` | `0` | Beats per minute (`0` = unset). *(v2.2)* |
@@ -161,9 +165,9 @@ The full editor + sheet renderer.
 
 `LanguageOption` is `{ code: string; name: string }`; `Transliteration` is `{ language: string; body: string; title?: string; transliteratedBy?: string }` — `transliteratedBy` credits whoever produced that transliteration.
 
-The editor is organised into **Editor**, **Credits**, **Music**, **Transliterations**, and **Chords** tabs. Section labels (lines starting with `#`) are classified as `intro`, `verse`, `pre-chorus`, `chorus`, `bridge`, `outro`, or generic `section`.
+The editor is organised into **Editor**, **Credits**, **Music**, **Transliterations**, **Chords**, and **Permissions** tabs. Section labels (lines starting with `#`) are classified as `intro`, `verse`, `pre-chorus`, `chorus`, `bridge`, `outro`, or generic `section`. In `readonly` (reader) mode a fine-print credits footer is rendered under the lyrics from `author`/`composer`/`copyright`/`permissions`/`license` — each line shown only when non-empty.
 
-**Event:** `change` — fired when the body or any field changes. `event.detail` contains `{ body, title, artist, author, composer, musicDirector, chordsContributedBy, language, songKey, hasChords, tempo, preferredKey, mode, timeSignature, rhythmPattern, transpose, instrument, transliterations }`.
+**Event:** `change` — fired when the body or any field changes. `event.detail` contains `{ body, title, artist, author, composer, musicDirector, chordsContributedBy, copyright, license, permissions, language, songKey, hasChords, tempo, preferredKey, mode, timeSignature, rhythmPattern, transpose, instrument, transliterations }`.
 
 ### `<chord-diagram>`
 

@@ -43,6 +43,12 @@ declare class ChordSheet extends LitElement {
     musicDirector: string;
     /** Credit for the person who contributed the music chords (free text). */
     chordsContributedBy: string;
+    /** Copyright line for the credits footer, shown verbatim (e.g. "© 2026 World Healing Music"). */
+    copyright: string;
+    /** Licensing line for the credits footer, shown verbatim (e.g. "CCLI License #1234567"). */
+    license: string;
+    /** Usage-permission line for the credits footer, shown verbatim (e.g. "Used by permission."). */
+    permissions: string;
     /** Original key; transposes along with the song. */
     songKey: string;
     /**
@@ -93,11 +99,18 @@ declare class ChordSheet extends LitElement {
     /** A labelled free-text field bound to one string property, emitting `change` on input. */
     private renderTextField;
     private renderCreditsTab;
+    private renderPermissionsTab;
     private renderMusicTab;
     private renderTransposeToolbar;
     private renderChordsTab;
     private renderTransliterationsTab;
     private renderLine;
+    /**
+     * Credits / licensing footer shown as fine print under the lyrics. Each line appears only when its
+     * source field is non-empty. Author/composer get a prefix; copyright/permissions/license are shown
+     * verbatim as entered (docs/21).
+     */
+    private renderCreditsFooter;
     private renderSheet;
     render(): lit_html.TemplateResult<1>;
 }

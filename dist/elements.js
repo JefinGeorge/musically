@@ -83,6 +83,9 @@ var ChordSheet = class extends LitElement {
     this.composer = "";
     this.musicDirector = "";
     this.chordsContributedBy = "";
+    this.copyright = "";
+    this.license = "";
+    this.permissions = "";
     this.songKey = "";
     this.hasChords = false;
     this.tempo = 0;
@@ -111,6 +114,9 @@ var ChordSheet = class extends LitElement {
           composer: this.composer,
           musicDirector: this.musicDirector,
           chordsContributedBy: this.chordsContributedBy,
+          copyright: this.copyright,
+          license: this.license,
+          permissions: this.permissions,
           language: this.language,
           songKey: this.songKey,
           hasChords: this.hasChords,
@@ -211,7 +217,8 @@ var ChordSheet = class extends LitElement {
       { id: "credits", label: "Credits" },
       { id: "music", label: "Music" },
       { id: "translit", label: `Transliterations${this.transliterations.length ? ` (${this.transliterations.length})` : ""}` },
-      { id: "chords", label: "Chords" }
+      { id: "chords", label: "Chords" },
+      { id: "permissions", label: "Permissions" }
     ];
     return html`<div class="tabs">
       ${tabs.map(
@@ -246,6 +253,14 @@ var ChordSheet = class extends LitElement {
       ${this.renderTextField("Composer", this.composer, (v) => this.composer = v, "e.g. Felix Mendelssohn")}
       ${this.renderTextField("Music director", this.musicDirector, (v) => this.musicDirector = v)}
       ${this.renderTextField("Performing artist", this.artist, (v) => this.artist = v)}
+    </div>`;
+  }
+  // ── Permissions tab (copyright / license / usage) — each a full line in the credits footer ──
+  renderPermissionsTab() {
+    return html`<div class="perm-fields">
+      ${this.renderTextField("Copyright", this.copyright, (v) => this.copyright = v, "e.g. \xA9 2026 World Healing Music")}
+      ${this.renderTextField("License", this.license, (v) => this.license = v, "e.g. CCLI License #1234567")}
+      ${this.renderTextField("Permissions", this.permissions, (v) => this.permissions = v, "e.g. Used by permission.")}
     </div>`;
   }
   // ── Music tab (chords flag + performance metadata) ──
@@ -436,6 +451,24 @@ var ChordSheet = class extends LitElement {
     )}
     </div>`;
   }
+  /**
+   * Credits / licensing footer shown as fine print under the lyrics. Each line appears only when its
+   * source field is non-empty. Author/composer get a prefix; copyright/permissions/license are shown
+   * verbatim as entered (docs/21).
+   */
+  renderCreditsFooter() {
+    const lines = [
+      this.author.trim() ? `Written by ${this.author.trim()}` : "",
+      this.composer.trim() ? `Composed by ${this.composer.trim()}` : "",
+      this.copyright.trim(),
+      this.permissions.trim(),
+      this.license.trim()
+    ].filter((l) => l);
+    if (!lines.length) return nothing;
+    return html`<div class="credits-footer">
+      ${lines.map((l) => html`<div class="credit-line">${l}</div>`)}
+    </div>`;
+  }
   renderSheet(body = this.body) {
     const lines = displayLines(parseChordPro(body, this.transpose), this.hasChords);
     const displayKey = this.songKey ? transposeNote(this.songKey, this.transpose) : "";
@@ -465,6 +498,7 @@ var ChordSheet = class extends LitElement {
             ${b.lines.map((line) => this.renderLine(line))}
           </div>`
     )}
+        ${this.renderCreditsFooter()}
       </div>
     `;
   }
@@ -495,7 +529,7 @@ var ChordSheet = class extends LitElement {
               ></textarea>
               ${this.renderSheet()}
             </div>
-          ` : this.tab === "credits" ? this.renderCreditsTab() : this.tab === "music" ? this.renderMusicTab() : this.tab === "translit" ? this.renderTransliterationsTab() : this.renderChordsTab()}
+          ` : this.tab === "credits" ? this.renderCreditsTab() : this.tab === "music" ? this.renderMusicTab() : this.tab === "translit" ? this.renderTransliterationsTab() : this.tab === "chords" ? this.renderChordsTab() : this.renderPermissionsTab()}
     `;
   }
 };
@@ -801,6 +835,24 @@ ChordSheet.styles = css`
     .toolbar.chords-tools {
       margin-bottom: 20px;
     }
+    /* Permissions tab: full-width stacked lines (copyright / license / permissions). */
+    .perm-fields {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    /* Credits / licensing footer under the lyrics — fine print. */
+    .credits-footer {
+      margin-top: 18px;
+      padding-top: 10px;
+      border-top: 1px solid var(--musically-border, #e4dcc8);
+      font-size: 11px;
+      line-height: 1.5;
+      color: var(--musically-muted, #8a8169);
+    }
+    .credit-line {
+      margin: 1px 0;
+    }
     input.text-input {
       font: inherit;
       font-size: 14px;
@@ -859,6 +911,15 @@ __decorateClass([
 __decorateClass([
   property({ attribute: "chords-contributed-by" })
 ], ChordSheet.prototype, "chordsContributedBy", 2);
+__decorateClass([
+  property()
+], ChordSheet.prototype, "copyright", 2);
+__decorateClass([
+  property()
+], ChordSheet.prototype, "license", 2);
+__decorateClass([
+  property()
+], ChordSheet.prototype, "permissions", 2);
 __decorateClass([
   property({ attribute: "song-key" })
 ], ChordSheet.prototype, "songKey", 2);
