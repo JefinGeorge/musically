@@ -14,7 +14,8 @@ Musically ships as standard **Web Components**, so it drops into **React, Angula
 - **Official "has chords" flag** *(v2.2)* — mark whether a song genuinely carries chords. Lyrics-only songs ignore any embedded `[chords]` on display and render tightly, with vertical space only between sections.
 - **Transpose** — shift an entire song up or down by semitones, with the key updated automatically.
 - **Switchable diagrams** — piano, guitar, and ukulele. Piano is computed from music theory (works for *any* chord); guitar/ukulele use a built-in shape library.
-- **Multi-language & transliterations** — tag a sheet with its language, offer a language list, and attach alternate-script versions shown in their own tab.
+- **Multi-language & transliterations** — tag a sheet with its language, offer a language list, and attach alternate-script versions shown in their own tab. Each transliteration can credit its author via **Transliterated by** *(v2.4)*.
+- **Contributor credits** *(v2.4)* — credit a chords contributor via **Chords contributed by** in the Chords tab (shown only when the song has chords).
 - **Performance & print views** — a clean, large reading layout for live use.
 - **Themeable** — restyle everything through CSS custom properties.
 - **Headless core** — use the theory engine on its own, no UI required.
@@ -142,6 +143,7 @@ The full editor + sheet renderer.
 | `author` | `string` | `""` | Lyricist / author. *(v2.2)* |
 | `composer` | `string` | `""` | Composer. *(v2.2)* |
 | `music-director` | `string` | `""` | Music director. *(v2.2)* |
+| `chords-contributed-by` | `string` | `""` | Credit for the person who contributed the chords. Shown in the Chords tab only when the song has chords. *(v2.4)* |
 | `song-key` | `string` | `""` | Original key (transposes along with the song). |
 | `has-chords` | `boolean` | `false` | Whether the song *officially* carries chords. When `false`, embedded `[chords]` are ignored on display and inter-line spacing is tightened (lyrics-only). *(v2.2)* |
 | `tempo` | `number` | `0` | Beats per minute (`0` = unset). *(v2.2)* |
@@ -157,11 +159,11 @@ The full editor + sheet renderer.
 | `languages` | `LanguageOption[]` | `[]` | Selectable languages for the editor's language dropdown. **Property only** (set via JS, not an attribute). |
 | `transliterations` | `Transliteration[]` | `[]` | Alternate-script versions, shown in the Transliterations tab. **Property only.** |
 
-`LanguageOption` is `{ code: string; name: string }`; `Transliteration` is `{ language: string; body: string }`.
+`LanguageOption` is `{ code: string; name: string }`; `Transliteration` is `{ language: string; body: string; title?: string; transliteratedBy?: string }` — `transliteratedBy` credits whoever produced that transliteration.
 
 The editor is organised into **Editor**, **Credits**, **Music**, **Transliterations**, and **Chords** tabs. Section labels (lines starting with `#`) are classified as `intro`, `verse`, `pre-chorus`, `chorus`, `bridge`, `outro`, or generic `section`.
 
-**Event:** `change` — fired when the body or any field changes. `event.detail` contains `{ body, title, artist, author, composer, musicDirector, language, songKey, hasChords, tempo, preferredKey, mode, timeSignature, rhythmPattern, transpose, instrument, transliterations }`.
+**Event:** `change` — fired when the body or any field changes. `event.detail` contains `{ body, title, artist, author, composer, musicDirector, chordsContributedBy, language, songKey, hasChords, tempo, preferredKey, mode, timeSignature, rhythmPattern, transpose, instrument, transliterations }`.
 
 ### `<chord-diagram>`
 

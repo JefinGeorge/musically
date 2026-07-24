@@ -84,6 +84,7 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
     this.author = "";
     this.composer = "";
     this.musicDirector = "";
+    this.chordsContributedBy = "";
     this.songKey = "";
     this.hasChords = false;
     this.tempo = 0;
@@ -111,6 +112,7 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
           author: this.author,
           composer: this.composer,
           musicDirector: this.musicDirector,
+          chordsContributedBy: this.chordsContributedBy,
           language: this.language,
           songKey: this.songKey,
           hasChords: this.hasChords,
@@ -337,6 +339,14 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
     const chords = chunkDSVCMPY5_cjs.getChordsInSong(this.body, this.transpose);
     const instruments = ["piano", "guitar", "ukulele"];
     return lit.html`
+      ${chords.length ? lit.html`<div class="meta-grid">
+            ${this.renderTextField(
+      "Chords contributed by",
+      this.chordsContributedBy,
+      (v) => this.chordsContributedBy = v,
+      "Credit the chords contributor"
+    )}
+          </div>` : lit.nothing}
       <div class="toolbar">
         <span class="label">Diagrams for</span>
         <div class="group">
@@ -391,6 +401,15 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
         <label class="field">
           Language
           ${this.renderLangSelect(active.language, (v) => this.updateTransliteration(activeIdx, { language: v }))}
+        </label>
+        <label class="field grow">
+          Transliterated by
+          <input
+            class="text-input"
+            .value=${active.transliteratedBy ?? ""}
+            placeholder="Credit the transliterator"
+            @input=${(e) => this.updateTransliteration(activeIdx, { transliteratedBy: e.target.value })}
+          />
         </label>
         <span class="spacer" style="margin-left:auto"></span>
         <button @click=${() => this.removeTransliteration(activeIdx)}>Remove</button>
@@ -831,6 +850,9 @@ chunkDSVCMPY5_cjs.__decorateClass([
 chunkDSVCMPY5_cjs.__decorateClass([
   decorators_js.property({ attribute: "music-director" })
 ], exports.ChordSheet.prototype, "musicDirector", 2);
+chunkDSVCMPY5_cjs.__decorateClass([
+  decorators_js.property({ attribute: "chords-contributed-by" })
+], exports.ChordSheet.prototype, "chordsContributedBy", 2);
 chunkDSVCMPY5_cjs.__decorateClass([
   decorators_js.property({ attribute: "song-key" })
 ], exports.ChordSheet.prototype, "songKey", 2);

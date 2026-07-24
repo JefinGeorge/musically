@@ -14,6 +14,8 @@ interface Transliteration {
     language: string;
     body: string;
     title?: string;
+    /** Credit for the person who produced this transliteration (free text). */
+    transliteratedBy?: string;
 }
 declare class ChordDiagram extends LitElement {
     /** Chord symbol, e.g. "Cmaj7", "F#m", "D/F#". */
@@ -39,6 +41,8 @@ declare class ChordSheet extends LitElement {
     composer: string;
     /** Music director (free text). */
     musicDirector: string;
+    /** Credit for the person who contributed the music chords (free text). */
+    chordsContributedBy: string;
     /** Original key; transposes along with the song. */
     songKey: string;
     /**

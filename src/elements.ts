@@ -41,6 +41,8 @@ export interface Transliteration {
   language: string;
   body: string;
   title?: string;
+  /** Credit for the person who produced this transliteration (free text). */
+  transliteratedBy?: string;
 }
 
 /* ================================================================== */
@@ -131,6 +133,8 @@ export class ChordSheet extends LitElement {
   @property() composer = "";
   /** Music director (free text). */
   @property({ attribute: "music-director" }) musicDirector = "";
+  /** Credit for the person who contributed the music chords (free text). */
+  @property({ attribute: "chords-contributed-by" }) chordsContributedBy = "";
   /** Original key; transposes along with the song. */
   @property({ attribute: "song-key" }) songKey = "";
   /**
@@ -510,6 +514,7 @@ export class ChordSheet extends LitElement {
           author: this.author,
           composer: this.composer,
           musicDirector: this.musicDirector,
+          chordsContributedBy: this.chordsContributedBy,
           language: this.language,
           songKey: this.songKey,
           hasChords: this.hasChords,
@@ -754,6 +759,16 @@ export class ChordSheet extends LitElement {
     const chords = getChordsInSong(this.body, this.transpose);
     const instruments: Instrument[] = ["piano", "guitar", "ukulele"];
     return html`
+      ${chords.length
+        ? html`<div class="meta-grid">
+            ${this.renderTextField(
+              "Chords contributed by",
+              this.chordsContributedBy,
+              (v) => (this.chordsContributedBy = v),
+              "Credit the chords contributor"
+            )}
+          </div>`
+        : nothing}
       <div class="toolbar">
         <span class="label">Diagrams for</span>
         <div class="group">
@@ -811,6 +826,15 @@ export class ChordSheet extends LitElement {
         <label class="field">
           Language
           ${this.renderLangSelect(active.language, (v) => this.updateTransliteration(activeIdx, { language: v }))}
+        </label>
+        <label class="field grow">
+          Transliterated by
+          <input
+            class="text-input"
+            .value=${active.transliteratedBy ?? ""}
+            placeholder="Credit the transliterator"
+            @input=${(e: Event) => this.updateTransliteration(activeIdx, { transliteratedBy: (e.target as HTMLInputElement).value })}
+          />
         </label>
         <span class="spacer" style="margin-left:auto"></span>
         <button @click=${() => this.removeTransliteration(activeIdx)}>Remove</button>

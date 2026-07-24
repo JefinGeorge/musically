@@ -82,6 +82,7 @@ var ChordSheet = class extends LitElement {
     this.author = "";
     this.composer = "";
     this.musicDirector = "";
+    this.chordsContributedBy = "";
     this.songKey = "";
     this.hasChords = false;
     this.tempo = 0;
@@ -109,6 +110,7 @@ var ChordSheet = class extends LitElement {
           author: this.author,
           composer: this.composer,
           musicDirector: this.musicDirector,
+          chordsContributedBy: this.chordsContributedBy,
           language: this.language,
           songKey: this.songKey,
           hasChords: this.hasChords,
@@ -335,6 +337,14 @@ var ChordSheet = class extends LitElement {
     const chords = getChordsInSong(this.body, this.transpose);
     const instruments = ["piano", "guitar", "ukulele"];
     return html`
+      ${chords.length ? html`<div class="meta-grid">
+            ${this.renderTextField(
+      "Chords contributed by",
+      this.chordsContributedBy,
+      (v) => this.chordsContributedBy = v,
+      "Credit the chords contributor"
+    )}
+          </div>` : nothing}
       <div class="toolbar">
         <span class="label">Diagrams for</span>
         <div class="group">
@@ -389,6 +399,15 @@ var ChordSheet = class extends LitElement {
         <label class="field">
           Language
           ${this.renderLangSelect(active.language, (v) => this.updateTransliteration(activeIdx, { language: v }))}
+        </label>
+        <label class="field grow">
+          Transliterated by
+          <input
+            class="text-input"
+            .value=${active.transliteratedBy ?? ""}
+            placeholder="Credit the transliterator"
+            @input=${(e) => this.updateTransliteration(activeIdx, { transliteratedBy: e.target.value })}
+          />
         </label>
         <span class="spacer" style="margin-left:auto"></span>
         <button @click=${() => this.removeTransliteration(activeIdx)}>Remove</button>
@@ -829,6 +848,9 @@ __decorateClass([
 __decorateClass([
   property({ attribute: "music-director" })
 ], ChordSheet.prototype, "musicDirector", 2);
+__decorateClass([
+  property({ attribute: "chords-contributed-by" })
+], ChordSheet.prototype, "chordsContributedBy", 2);
 __decorateClass([
   property({ attribute: "song-key" })
 ], ChordSheet.prototype, "songKey", 2);

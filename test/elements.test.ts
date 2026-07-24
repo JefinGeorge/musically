@@ -334,4 +334,52 @@ describe("<chord-sheet>", () => {
     expect(el.transliterations.length).toBe(1);
     expect(detail.transliterations.length).toBe(1);
   });
+
+  it("edits a transliteration's 'Transliterated by' credit and emits it", async () => {
+    el.transliterations = [{ language: "ml", body: "[C]a", title: "" }];
+    await mount(el);
+    let detail: any = null;
+    el.addEventListener("change", (e) => (detail = (e as CustomEvent).detail));
+
+    const translitTab = [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>(".tab")].find((b) =>
+      b.textContent?.includes("Transliterations")
+    )!;
+    translitTab.click();
+    await el.updateComplete;
+
+    const credit = el.shadowRoot!.querySelector<HTMLInputElement>("input.text-input")!;
+    credit.value = "Jane Roe";
+    credit.dispatchEvent(new Event("input"));
+    await el.updateComplete;
+
+    expect(el.transliterations[0].transliteratedBy).toBe("Jane Roe");
+    expect(detail.transliterations[0].transliteratedBy).toBe("Jane Roe");
+  });
+
+  it("shows 'Chords contributed by' only when the song has chords, and emits it", async () => {
+    await mount(el);
+
+    // Lyrics-only: no chords detected, so no credit field.
+    const chordsTab = [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>(".tab")].find(
+      (b) => b.textContent?.trim() === "Chords"
+    )!;
+    chordsTab.click();
+    await el.updateComplete;
+    expect(el.shadowRoot!.querySelector("input.text-input")).toBeNull();
+
+    // Add a chord to the body and the credit field appears.
+    let detail: any = null;
+    el.addEventListener("change", (e) => (detail = (e as CustomEvent).detail));
+    el.body = "[C]a";
+    await el.updateComplete;
+
+    const credit = el.shadowRoot!.querySelector<HTMLInputElement>("input.text-input")!;
+    expect(credit).not.toBeNull();
+    credit.value = "John Doe";
+    credit.dispatchEvent(new Event("input"));
+    await el.updateComplete;
+
+    expect(el.chordsContributedBy).toBe("John Doe");
+    expect(detail.chordsContributedBy).toBe("John Doe");
+  });
 });
