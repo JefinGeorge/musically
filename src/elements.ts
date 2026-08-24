@@ -24,6 +24,7 @@ import {
   getChordsInSong,
   chordNotes,
   getDiagramSVG,
+  normalizeVideoUrl,
   transposeNote,
   SONG_KEYS,
 } from "./index.js";
@@ -158,6 +159,12 @@ export class ChordSheet extends LitElement {
   @property({ attribute: "time-signature" }) timeSignature = "";
   /** Free-text rhythm / strumming pattern. */
   @property({ attribute: "rhythm-pattern" }) rhythmPattern = "";
+  /**
+   * External link to a video of the song — YouTube, Vimeo, Facebook, a church's own stream. Not
+   * embedded anywhere: the reader shows it as a link and the mobile apps hand it to the system,
+   * which is why it is normalised (`normalizeVideoUrl`) rather than stored verbatim.
+   */
+  @property({ attribute: "video-url" }) videoUrl = "";
   /** Semitones to shift all chords. */
   @property({ type: Number }) transpose = 0;
   /** Diagram instrument. */
@@ -277,6 +284,19 @@ export class ChordSheet extends LitElement {
       font-size: 13px;
       color: var(--musically-muted, #8a8169);
       margin-top: 4px;
+    }
+    /* External video link, when the song carries one. A link, never an embed — the sheet has no
+       business loading a third-party player. */
+    .header .video-link {
+      display: inline-block;
+      margin-top: 6px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--musically-accent, #1d4ed8);
+      text-decoration: none;
+    }
+    .header .video-link:hover {
+      text-decoration: underline;
     }
     .section {
       font-weight: 700;
@@ -480,6 +500,20 @@ export class ChordSheet extends LitElement {
     .toolbar.chords-tools {
       margin-bottom: 20px;
     }
+    /* Music tab: the video link takes a full-width row of its own, with a note underneath. */
+    .video-field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-top: 12px;
+    }
+    .field-note {
+      font-size: 12px;
+      color: var(--musically-muted, #8a8169);
+    }
+    .field-note.warn {
+      color: var(--musically-warn, #b4402a);
+    }
     /* Permissions tab: full-width stacked lines (copyright / license / permissions). */
     .perm-fields {
       display: flex;
@@ -558,6 +592,7 @@ export class ChordSheet extends LitElement {
           mode: this.mode,
           timeSignature: this.timeSignature,
           rhythmPattern: this.rhythmPattern,
+          videoUrl: this.videoUrl,
           transpose: this.transpose,
           instrument: this.instrument,
           transliterations: this.transliterations,
@@ -773,7 +808,45 @@ export class ChordSheet extends LitElement {
         ${this.renderTextField("Time signature", this.timeSignature, (v) => (this.timeSignature = v), "e.g. 4/4")}
         ${this.renderTextField("Rhythm pattern", this.rhythmPattern, (v) => (this.rhythmPattern = v), "e.g. D DU UDU")}
       </div>
+      ${this.renderVideoField()}
     `;
+  }
+
+  /**
+   * Video link (Music tab). Normalised on `change` — blur or Enter — rather than on every keystroke:
+   * rewriting the value mid-type fights whoever is editing it. A link that can't be opened is called
+   * out rather than silently dropped, because it is saved either way and the apps would just show a
+   * button that goes nowhere.
+   */
+  private renderVideoField() {
+    const raw = this.videoUrl.trim();
+    const broken = raw !== "" && normalizeVideoUrl(raw) === null;
+    return html`<div class="video-field">
+      <label class="field grow">
+        Video link
+        <input
+          class="text-input"
+          .value=${this.videoUrl}
+          placeholder="https://www.youtube.com/watch?v=…"
+          @input=${(e: Event) => {
+            this.videoUrl = (e.target as HTMLInputElement).value;
+            this.emitChange();
+          }}
+          @change=${(e: Event) => {
+            const normalized = normalizeVideoUrl((e.target as HTMLInputElement).value);
+            if (normalized && normalized !== this.videoUrl) {
+              this.videoUrl = normalized;
+              this.emitChange();
+            }
+          }}
+        />
+      </label>
+      <div class=${"field-note" + (broken ? " warn" : "")}>
+        ${broken
+          ? "That isn't a link the apps can open — paste a full http(s) address."
+          : "YouTube, Vimeo, or any other streaming link. The mobile apps show it as a video button on the song."}
+      </div>
+    </div>`;
   }
 
   private renderTransposeToolbar() {
@@ -950,6 +1023,9 @@ export class ChordSheet extends LitElement {
     }
     if (cur.label || cur.lines.length) blocks.push(cur);
 
+    // Only a link that survives normalisation is offered — an unopenable one would be a dead button.
+    const videoLink = normalizeVideoUrl(this.videoUrl);
+
     return html`
       <div class=${"sheet" + (this.hasChords ? "" : " lyrics-only")}>
         <div class="header">
@@ -957,6 +1033,11 @@ export class ChordSheet extends LitElement {
           <div class="meta">
             ${this.artist}${this.artist && displayKey ? " · " : ""}${displayKey ? "Key of " + displayKey : ""}${offset}
           </div>
+          ${videoLink
+            ? html`<a class="video-link" href=${videoLink} target="_blank" rel="noopener noreferrer"
+                >▶ Watch video</a
+              >`
+            : nothing}
         </div>
         ${blocks.map(
           (b) => html`<div class="block" data-section=${b.type ?? nothing}>

@@ -311,6 +311,38 @@ export function getChordsInSong(text: string, transpose = 0): string[] {
 }
 
 /* ------------------------------------------------------------------ */
+/* Video links                                                        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Normalise a pasted video link — YouTube, Vimeo, Facebook, a church's own stream — into a URL that
+ * is safe to hand straight to a browser or a phone's `openURL`. A bare host ("youtu.be/dQw4w9WgXcQ")
+ * gains an `https://` scheme; anything that is not http(s) returns null.
+ *
+ * This is deliberately platform-agnostic: the song's video is an *external* link, so a Vimeo or
+ * Facebook URL is as valid as a YouTube one and no provider is privileged. It rejects rather than
+ * repairs, because the value ends up in an `href` on the web and in an `openURL` on the phones —
+ * `javascript:` and `data:` must never survive that trip.
+ */
+export function normalizeVideoUrl(raw: string): string | null {
+  const s = String(raw ?? "").trim();
+  if (!s) return null;
+  // Test the scheme *before* guessing at https://: "javascript:alert(1)" is a perfectly valid URL,
+  // so parsing first and checking the protocol after would let a bare-word scheme through as a host.
+  if (/^[a-z][a-z0-9+.-]*:/i.test(s) && !/^https?:\/\//i.test(s)) return null;
+  let url: URL;
+  try {
+    url = new URL(/^https?:\/\//i.test(s) ? s : `https://${s}`);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+  // A hostname with no dot ("https://watch") can't be a streaming service — it's a typed fragment.
+  if (!url.hostname.includes(".")) return null;
+  return url.toString();
+}
+
+/* ------------------------------------------------------------------ */
 /* SVG diagram generation                                             */
 /* ------------------------------------------------------------------ */
 

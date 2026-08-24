@@ -66,6 +66,12 @@ declare class ChordSheet extends LitElement {
     timeSignature: string;
     /** Free-text rhythm / strumming pattern. */
     rhythmPattern: string;
+    /**
+     * External link to a video of the song — YouTube, Vimeo, Facebook, a church's own stream. Not
+     * embedded anywhere: the reader shows it as a link and the mobile apps hand it to the system,
+     * which is why it is normalised (`normalizeVideoUrl`) rather than stored verbatim.
+     */
+    videoUrl: string;
     /** Semitones to shift all chords. */
     transpose: number;
     /** Diagram instrument. */
@@ -101,6 +107,13 @@ declare class ChordSheet extends LitElement {
     private renderCreditsTab;
     private renderPermissionsTab;
     private renderMusicTab;
+    /**
+     * Video link (Music tab). Normalised on `change` — blur or Enter — rather than on every keystroke:
+     * rewriting the value mid-type fights whoever is editing it. A link that can't be opened is called
+     * out rather than silently dropped, because it is saved either way and the apps would just show a
+     * button that goes nowhere.
+     */
+    private renderVideoField;
     private renderTransposeToolbar;
     private renderChordsTab;
     private renderTransliterationsTab;

@@ -1,6 +1,6 @@
 'use strict';
 
-var chunkDSVCMPY5_cjs = require('./chunk-DSVCMPY5.cjs');
+var chunkII4BAJMC_cjs = require('./chunk-II4BAJMC.cjs');
 var lit = require('lit');
 var decorators_js = require('lit/decorators.js');
 var unsafeHtml_js = require('lit/directives/unsafe-html.js');
@@ -23,12 +23,12 @@ exports.ChordDiagram = class ChordDiagram extends lit.LitElement {
   }
   render() {
     if (!this.chord) return lit.nothing;
-    const diagram = chunkDSVCMPY5_cjs.getDiagramSVG(this.chord, this.instrument, this.themeOptions());
+    const diagram = chunkII4BAJMC_cjs.getDiagramSVG(this.chord, this.instrument, this.themeOptions());
     return lit.html`
       <div class="card">
         ${this.diagramOnly ? lit.nothing : lit.html`<div class="name">${this.chord}</div>`}
         ${unsafeHtml_js.unsafeHTML(diagram)}
-        ${this.diagramOnly ? lit.nothing : lit.html`<div class="notes">${chunkDSVCMPY5_cjs.chordNotes(this.chord).join(" \xB7 ")}</div>`}
+        ${this.diagramOnly ? lit.nothing : lit.html`<div class="notes">${chunkII4BAJMC_cjs.chordNotes(this.chord).join(" \xB7 ")}</div>`}
       </div>
     `;
   }
@@ -63,16 +63,16 @@ exports.ChordDiagram.styles = lit.css`
       display: block;
     }
   `;
-chunkDSVCMPY5_cjs.__decorateClass([
+chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.property()
 ], exports.ChordDiagram.prototype, "chord", 2);
-chunkDSVCMPY5_cjs.__decorateClass([
+chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.property()
 ], exports.ChordDiagram.prototype, "instrument", 2);
-chunkDSVCMPY5_cjs.__decorateClass([
+chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.property({ type: Boolean, attribute: "diagram-only" })
 ], exports.ChordDiagram.prototype, "diagramOnly", 2);
-exports.ChordDiagram = chunkDSVCMPY5_cjs.__decorateClass([
+exports.ChordDiagram = chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.customElement("chord-diagram")
 ], exports.ChordDiagram);
 exports.ChordSheet = class ChordSheet extends lit.LitElement {
@@ -95,6 +95,7 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
     this.mode = "";
     this.timeSignature = "";
     this.rhythmPattern = "";
+    this.videoUrl = "";
     this.transpose = 0;
     this.instrument = "piano";
     this.showDiagrams = true;
@@ -127,6 +128,7 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
           mode: this.mode,
           timeSignature: this.timeSignature,
           rhythmPattern: this.rhythmPattern,
+          videoUrl: this.videoUrl,
           transpose: this.transpose,
           instrument: this.instrument,
           transliterations: this.transliterations
@@ -207,7 +209,7 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
     }}
           >
             <option value="" .selected=${!this.songKey}>—</option>
-            ${chunkDSVCMPY5_cjs.SONG_KEYS.map((k) => lit.html`<option value=${k} .selected=${k === this.songKey}>${k}</option>`)}
+            ${chunkII4BAJMC_cjs.SONG_KEYS.map((k) => lit.html`<option value=${k} .selected=${k === this.songKey}>${k}</option>`)}
           </select>
         </label>
       </div>
@@ -306,7 +308,7 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
     }}
           >
             <option value="" .selected=${!this.preferredKey}>—</option>
-            ${chunkDSVCMPY5_cjs.SONG_KEYS.map((k) => lit.html`<option value=${k} .selected=${k === this.preferredKey}>${k}</option>`)}
+            ${chunkII4BAJMC_cjs.SONG_KEYS.map((k) => lit.html`<option value=${k} .selected=${k === this.preferredKey}>${k}</option>`)}
           </select>
         </label>
         <label class="field">
@@ -325,7 +327,42 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
         ${this.renderTextField("Time signature", this.timeSignature, (v) => this.timeSignature = v, "e.g. 4/4")}
         ${this.renderTextField("Rhythm pattern", this.rhythmPattern, (v) => this.rhythmPattern = v, "e.g. D DU UDU")}
       </div>
+      ${this.renderVideoField()}
     `;
+  }
+  /**
+   * Video link (Music tab). Normalised on `change` — blur or Enter — rather than on every keystroke:
+   * rewriting the value mid-type fights whoever is editing it. A link that can't be opened is called
+   * out rather than silently dropped, because it is saved either way and the apps would just show a
+   * button that goes nowhere.
+   */
+  renderVideoField() {
+    const raw = this.videoUrl.trim();
+    const broken = raw !== "" && chunkII4BAJMC_cjs.normalizeVideoUrl(raw) === null;
+    return lit.html`<div class="video-field">
+      <label class="field grow">
+        Video link
+        <input
+          class="text-input"
+          .value=${this.videoUrl}
+          placeholder="https://www.youtube.com/watch?v=…"
+          @input=${(e) => {
+      this.videoUrl = e.target.value;
+      this.emitChange();
+    }}
+          @change=${(e) => {
+      const normalized = chunkII4BAJMC_cjs.normalizeVideoUrl(e.target.value);
+      if (normalized && normalized !== this.videoUrl) {
+        this.videoUrl = normalized;
+        this.emitChange();
+      }
+    }}
+        />
+      </label>
+      <div class=${"field-note" + (broken ? " warn" : "")}>
+        ${broken ? "That isn't a link the apps can open \u2014 paste a full http(s) address." : "YouTube, Vimeo, or any other streaming link. The mobile apps show it as a video button on the song."}
+      </div>
+    </div>`;
   }
   renderTransposeToolbar() {
     const instruments = ["piano", "guitar", "ukulele"];
@@ -351,7 +388,7 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
     `;
   }
   renderChordsTab() {
-    const chords = chunkDSVCMPY5_cjs.getChordsInSong(this.body, this.transpose);
+    const chords = chunkII4BAJMC_cjs.getChordsInSong(this.body, this.transpose);
     const instruments = ["piano", "guitar", "ukulele"];
     return lit.html`
       ${chords.length ? lit.html`<div class="meta-grid chords-credit">
@@ -472,8 +509,8 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
     </div>`;
   }
   renderSheet(body = this.body) {
-    const lines = chunkDSVCMPY5_cjs.displayLines(chunkDSVCMPY5_cjs.parseChordPro(body, this.transpose), this.hasChords);
-    const displayKey = this.songKey ? chunkDSVCMPY5_cjs.transposeNote(this.songKey, this.transpose) : "";
+    const lines = chunkII4BAJMC_cjs.displayLines(chunkII4BAJMC_cjs.parseChordPro(body, this.transpose), this.hasChords);
+    const displayKey = this.songKey ? chunkII4BAJMC_cjs.transposeNote(this.songKey, this.transpose) : "";
     const offset = this.transpose !== 0 ? ` (${this.transpose > 0 ? "+" : ""}${this.transpose})` : "";
     const blocks = [];
     let cur = { type: null, label: null, lines: [] };
@@ -486,6 +523,7 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
       }
     }
     if (cur.label || cur.lines.length) blocks.push(cur);
+    const videoLink = chunkII4BAJMC_cjs.normalizeVideoUrl(this.videoUrl);
     return lit.html`
       <div class=${"sheet" + (this.hasChords ? "" : " lyrics-only")}>
         <div class="header">
@@ -493,6 +531,9 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
           <div class="meta">
             ${this.artist}${this.artist && displayKey ? " \xB7 " : ""}${displayKey ? "Key of " + displayKey : ""}${offset}
           </div>
+          ${videoLink ? lit.html`<a class="video-link" href=${videoLink} target="_blank" rel="noopener noreferrer"
+                >▶ Watch video</a
+              >` : lit.nothing}
         </div>
         ${blocks.map(
       (b) => lit.html`<div class="block" data-section=${b.type ?? lit.nothing}>
@@ -506,7 +547,7 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
   }
   render() {
     if (this.readonly) {
-      const chords = chunkDSVCMPY5_cjs.getChordsInSong(this.body, this.transpose);
+      const chords = chunkII4BAJMC_cjs.getChordsInSong(this.body, this.transpose);
       return lit.html`
         ${this.renderSheet()}
         ${this.hasChords && this.showDiagrams && chords.length ? lit.html`<div class="diagrams-label">Chords used — ${this.instrument}</div>
@@ -634,6 +675,19 @@ exports.ChordSheet.styles = lit.css`
       font-size: 13px;
       color: var(--musically-muted, #8a8169);
       margin-top: 4px;
+    }
+    /* External video link, when the song carries one. A link, never an embed — the sheet has no
+       business loading a third-party player. */
+    .header .video-link {
+      display: inline-block;
+      margin-top: 6px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--musically-accent, #1d4ed8);
+      text-decoration: none;
+    }
+    .header .video-link:hover {
+      text-decoration: underline;
     }
     .section {
       font-weight: 700;
@@ -837,6 +891,20 @@ exports.ChordSheet.styles = lit.css`
     .toolbar.chords-tools {
       margin-bottom: 20px;
     }
+    /* Music tab: the video link takes a full-width row of its own, with a note underneath. */
+    .video-field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-top: 12px;
+    }
+    .field-note {
+      font-size: 12px;
+      color: var(--musically-muted, #8a8169);
+    }
+    .field-note.warn {
+      color: var(--musically-warn, #b4402a);
+    }
     /* Permissions tab: full-width stacked lines (copyright / license / permissions). */
     .perm-fields {
       display: flex;
@@ -892,85 +960,88 @@ exports.ChordSheet.styles = lit.css`
       margin-top: 2px;
     }
   `;
-chunkDSVCMPY5_cjs.__decorateClass([
+chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.property()
 ], exports.ChordSheet.prototype, "body", 2);
-chunkDSVCMPY5_cjs.__decorateClass([
+chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.property()
 ], exports.ChordSheet.prototype, "title", 2);
-chunkDSVCMPY5_cjs.__decorateClass([
+chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.property()
 ], exports.ChordSheet.prototype, "artist", 2);
-chunkDSVCMPY5_cjs.__decorateClass([
+chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.property()
 ], exports.ChordSheet.prototype, "author", 2);
-chunkDSVCMPY5_cjs.__decorateClass([
+chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.property()
 ], exports.ChordSheet.prototype, "composer", 2);
-chunkDSVCMPY5_cjs.__decorateClass([
+chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.property({ attribute: "music-director" })
 ], exports.ChordSheet.prototype, "musicDirector", 2);
-chunkDSVCMPY5_cjs.__decorateClass([
+chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.property({ attribute: "chords-contributed-by" })
 ], exports.ChordSheet.prototype, "chordsContributedBy", 2);
-chunkDSVCMPY5_cjs.__decorateClass([
+chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.property()
 ], exports.ChordSheet.prototype, "copyright", 2);
-chunkDSVCMPY5_cjs.__decorateClass([
+chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.property()
 ], exports.ChordSheet.prototype, "license", 2);
-chunkDSVCMPY5_cjs.__decorateClass([
+chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.property()
 ], exports.ChordSheet.prototype, "permissions", 2);
-chunkDSVCMPY5_cjs.__decorateClass([
+chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.property({ attribute: "song-key" })
 ], exports.ChordSheet.prototype, "songKey", 2);
-chunkDSVCMPY5_cjs.__decorateClass([
+chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.property({ type: Boolean, attribute: "has-chords" })
 ], exports.ChordSheet.prototype, "hasChords", 2);
-chunkDSVCMPY5_cjs.__decorateClass([
+chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.property({ type: Number })
 ], exports.ChordSheet.prototype, "tempo", 2);
-chunkDSVCMPY5_cjs.__decorateClass([
+chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.property({ attribute: "preferred-key" })
 ], exports.ChordSheet.prototype, "preferredKey", 2);
-chunkDSVCMPY5_cjs.__decorateClass([
+chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.property()
 ], exports.ChordSheet.prototype, "mode", 2);
-chunkDSVCMPY5_cjs.__decorateClass([
+chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.property({ attribute: "time-signature" })
 ], exports.ChordSheet.prototype, "timeSignature", 2);
-chunkDSVCMPY5_cjs.__decorateClass([
+chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.property({ attribute: "rhythm-pattern" })
 ], exports.ChordSheet.prototype, "rhythmPattern", 2);
-chunkDSVCMPY5_cjs.__decorateClass([
+chunkII4BAJMC_cjs.__decorateClass([
+  decorators_js.property({ attribute: "video-url" })
+], exports.ChordSheet.prototype, "videoUrl", 2);
+chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.property({ type: Number })
 ], exports.ChordSheet.prototype, "transpose", 2);
-chunkDSVCMPY5_cjs.__decorateClass([
+chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.property()
 ], exports.ChordSheet.prototype, "instrument", 2);
-chunkDSVCMPY5_cjs.__decorateClass([
+chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.property({ type: Boolean, attribute: "show-diagrams" })
 ], exports.ChordSheet.prototype, "showDiagrams", 2);
-chunkDSVCMPY5_cjs.__decorateClass([
+chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.property({ type: Boolean })
 ], exports.ChordSheet.prototype, "readonly", 2);
-chunkDSVCMPY5_cjs.__decorateClass([
+chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.property()
 ], exports.ChordSheet.prototype, "language", 2);
-chunkDSVCMPY5_cjs.__decorateClass([
+chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.property({ attribute: false })
 ], exports.ChordSheet.prototype, "languages", 2);
-chunkDSVCMPY5_cjs.__decorateClass([
+chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.property({ attribute: false })
 ], exports.ChordSheet.prototype, "transliterations", 2);
-chunkDSVCMPY5_cjs.__decorateClass([
+chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.state()
 ], exports.ChordSheet.prototype, "tab", 2);
-chunkDSVCMPY5_cjs.__decorateClass([
+chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.state()
 ], exports.ChordSheet.prototype, "xlitTab", 2);
-exports.ChordSheet = chunkDSVCMPY5_cjs.__decorateClass([
+exports.ChordSheet = chunkII4BAJMC_cjs.__decorateClass([
   decorators_js.customElement("chord-sheet")
 ], exports.ChordSheet);
 //# sourceMappingURL=elements.cjs.map

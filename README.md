@@ -17,6 +17,7 @@ Musically ships as standard **Web Components**, so it drops into **React, Angula
 - **Multi-language & transliterations** — tag a sheet with its language, offer a language list, and attach alternate-script versions shown in their own tab. Each transliteration can credit its author via **Transliterated by** *(v2.4)*.
 - **Contributor credits** *(v2.4)* — credit a chords contributor via **Chords contributed by** in the Chords tab (shown only when the song has chords).
 - **Permissions & credits footer** *(v2.5)* — a **Permissions** tab collects `copyright`, `license`, and `permissions` lines; the reader renders a fine-print footer under the lyrics with each non-empty line — `Written by …`, `Composed by …`, then the copyright / permissions / license lines verbatim.
+- **Video link** *(v2.6)* — collect an external video URL for a song (YouTube, Vimeo, or any other streaming platform) in the **Music** tab. Stored as a link, never an embed: the reader shows a **▶ Watch video** link and the mobile apps hand it to the phone.
 - **Performance & print views** — a clean, large reading layout for live use.
 - **Themeable** — restyle everything through CSS custom properties.
 - **Headless core** — use the theory engine on its own, no UI required.
@@ -155,6 +156,7 @@ The full editor + sheet renderer.
 | `mode` | `"major" \| "minor" \| ""` | `""` | Tonality. *(v2.2)* |
 | `time-signature` | `string` | `""` | e.g. `4/4`, `6/8`. *(v2.2)* |
 | `rhythm-pattern` | `string` | `""` | Free-text strumming / rhythm pattern. *(v2.2)* |
+| `video-url` | `string` | `""` | External link to a video of the song — YouTube, Vimeo, or any other streaming platform. Collected in the Music tab, normalised on blur, and rendered as a **▶ Watch video** link on the sheet. Never embedded. *(v2.6)* |
 | `transpose` | `number` | `0` | Semitones to shift all chords. |
 | `instrument` | `"piano" \| "guitar" \| "ukulele"` | `"piano"` | Diagram instrument. |
 | `show-diagrams` | `boolean` | `true` | Toggle the "chords used" diagram strip (only shown when `has-chords` is set). |
@@ -167,7 +169,7 @@ The full editor + sheet renderer.
 
 The editor is organised into **Editor**, **Credits**, **Music**, **Transliterations**, **Chords**, and **Permissions** tabs. Section labels (lines starting with `#`) are classified as `intro`, `verse`, `pre-chorus`, `chorus`, `bridge`, `outro`, or generic `section`. In `readonly` (reader) mode a fine-print credits footer is rendered under the lyrics from `author`/`composer`/`copyright`/`permissions`/`license` — each line shown only when non-empty.
 
-**Event:** `change` — fired when the body or any field changes. `event.detail` contains `{ body, title, artist, author, composer, musicDirector, chordsContributedBy, copyright, license, permissions, language, songKey, hasChords, tempo, preferredKey, mode, timeSignature, rhythmPattern, transpose, instrument, transliterations }`.
+**Event:** `change` — fired when the body or any field changes. `event.detail` contains `{ body, title, artist, author, composer, musicDirector, chordsContributedBy, copyright, license, permissions, language, songKey, hasChords, tempo, preferredKey, mode, timeSignature, rhythmPattern, videoUrl, transpose, instrument, transliterations }`.
 
 ### `<chord-diagram>`
 
@@ -196,6 +198,7 @@ import {
   displayLines,
   sectionTypeFromLabel,
   getDiagramSVG,
+  normalizeVideoUrl,
 } from 'musically';
 
 transposeChord('Am7', 2);        // → "Bm7"
@@ -210,6 +213,11 @@ displayLines(lines, false);
 
 sectionTypeFromLabel('Pre-Chorus 2'); // → "pre-chorus"
 getDiagramSVG('G', 'guitar');          // → SVG markup string
+
+// Vet a pasted video link before storing or opening it. Adds a missing scheme;
+// returns null for anything that isn't an http(s) address.
+normalizeVideoUrl('youtu.be/dQw4w9WgXcQ'); // → "https://youtu.be/dQw4w9WgXcQ"
+normalizeVideoUrl('javascript:alert(1)');  // → null
 ```
 
 ---

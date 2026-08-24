@@ -1,5 +1,3 @@
-'use strict';
-
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __decorateClass = (decorators, target, key, kind) => {
@@ -349,6 +347,20 @@ function getChordsInSong(text, transpose = 0) {
   }
   return list;
 }
+function normalizeVideoUrl(raw) {
+  const s = String(raw ?? "").trim();
+  if (!s) return null;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(s) && !/^https?:\/\//i.test(s)) return null;
+  let url;
+  try {
+    url = new URL(/^https?:\/\//i.test(s) ? s : `https://${s}`);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+  if (!url.hostname.includes(".")) return null;
+  return url.toString();
+}
 var DEFAULTS = {
   accent: "#1d4ed8",
   root: "#1e3a8a",
@@ -422,23 +434,6 @@ function getDiagramSVG(symbol, instrument = "piano", options = {}) {
   return shape ? fretboardSVG(shape, o) : placeholderSVG(o);
 }
 
-exports.GUITAR_SHAPES = GUITAR_SHAPES;
-exports.SECTION_TYPES = SECTION_TYPES;
-exports.SHARP_NOTES = SHARP_NOTES;
-exports.SONG_KEYS = SONG_KEYS;
-exports.UKULELE_SHAPES = UKULELE_SHAPES;
-exports.__decorateClass = __decorateClass;
-exports.chordNotes = chordNotes;
-exports.displayLines = displayLines;
-exports.getChordsInSong = getChordsInSong;
-exports.getDiagramSVG = getDiagramSVG;
-exports.getShape = getShape;
-exports.parseChord = parseChord;
-exports.parseChordPro = parseChordPro;
-exports.parseLine = parseLine;
-exports.qualityIntervals = qualityIntervals;
-exports.sectionTypeFromLabel = sectionTypeFromLabel;
-exports.transposeChord = transposeChord;
-exports.transposeNote = transposeNote;
-//# sourceMappingURL=chunk-DSVCMPY5.cjs.map
-//# sourceMappingURL=chunk-DSVCMPY5.cjs.map
+export { GUITAR_SHAPES, SECTION_TYPES, SHARP_NOTES, SONG_KEYS, UKULELE_SHAPES, __decorateClass, chordNotes, displayLines, getChordsInSong, getDiagramSVG, getShape, normalizeVideoUrl, parseChord, parseChordPro, parseLine, qualityIntervals, sectionTypeFromLabel, transposeChord, transposeNote };
+//# sourceMappingURL=chunk-L7CJNN5U.js.map
+//# sourceMappingURL=chunk-L7CJNN5U.js.map

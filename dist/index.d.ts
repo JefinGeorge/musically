@@ -87,10 +87,21 @@ declare function displayLines(lines: SheetLine[], hasChords: boolean): SheetLine
 /** Collect the unique chords used in a song, in order of first appearance. */
 declare function getChordsInSong(text: string, transpose?: number): string[];
 /**
+ * Normalise a pasted video link — YouTube, Vimeo, Facebook, a church's own stream — into a URL that
+ * is safe to hand straight to a browser or a phone's `openURL`. A bare host ("youtu.be/dQw4w9WgXcQ")
+ * gains an `https://` scheme; anything that is not http(s) returns null.
+ *
+ * This is deliberately platform-agnostic: the song's video is an *external* link, so a Vimeo or
+ * Facebook URL is as valid as a YouTube one and no provider is privileged. It rejects rather than
+ * repairs, because the value ends up in an `href` on the web and in an `openURL` on the phones —
+ * `javascript:` and `data:` must never survive that trip.
+ */
+declare function normalizeVideoUrl(raw: string): string | null;
+/**
  * Generate a chord diagram as an SVG string.
  * Piano works for any chord (computed from theory); guitar/ukulele use the
  * built-in shape library and fall back to a placeholder when a shape is unknown.
  */
 declare function getDiagramSVG(symbol: string, instrument?: Instrument, options?: DiagramOptions): string;
 
-export { type ChordSegment, type DiagramOptions, GUITAR_SHAPES, type Instrument, type ParsedChord, SECTION_TYPES, SHARP_NOTES, SONG_KEYS, type SectionType, type SheetLine, UKULELE_SHAPES, chordNotes, displayLines, getChordsInSong, getDiagramSVG, getShape, parseChord, parseChordPro, parseLine, qualityIntervals, sectionTypeFromLabel, transposeChord, transposeNote };
+export { type ChordSegment, type DiagramOptions, GUITAR_SHAPES, type Instrument, type ParsedChord, SECTION_TYPES, SHARP_NOTES, SONG_KEYS, type SectionType, type SheetLine, UKULELE_SHAPES, chordNotes, displayLines, getChordsInSong, getDiagramSVG, getShape, normalizeVideoUrl, parseChord, parseChordPro, parseLine, qualityIntervals, sectionTypeFromLabel, transposeChord, transposeNote };

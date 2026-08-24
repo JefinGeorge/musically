@@ -440,4 +440,80 @@ describe("<chord-sheet>", () => {
     await mount(el);
     expect(el.shadowRoot!.querySelector(".credits-footer")).toBeNull();
   });
+
+  // ── Video link (Music tab) ────────────────────────────────────────────────
+  it("collects a video link in the Music tab and emits it on change", async () => {
+    await mount(el);
+    let detail: any = null;
+    el.addEventListener("change", (e) => (detail = (e as CustomEvent).detail));
+
+    const musicTab = [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>(".tab")].find(
+      (b) => b.textContent?.trim() === "Music"
+    )!;
+    musicTab.click();
+    await el.updateComplete;
+
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>(".video-field input.text-input")!;
+    input.value = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+    input.dispatchEvent(new Event("input"));
+    await el.updateComplete;
+
+    expect(el.videoUrl).toBe("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+    expect(detail.videoUrl).toBe("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+  });
+
+  it("normalises a scheme-less video link on blur, not on every keystroke", async () => {
+    await mount(el);
+    const musicTab = [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>(".tab")].find(
+      (b) => b.textContent?.trim() === "Music"
+    )!;
+    musicTab.click();
+    await el.updateComplete;
+
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>(".video-field input.text-input")!;
+    input.value = "youtu.be/dQw4w9WgXcQ";
+    input.dispatchEvent(new Event("input"));
+    await el.updateComplete;
+    // Mid-type the value is left exactly as typed — rewriting it here fights the person editing.
+    expect(el.videoUrl).toBe("youtu.be/dQw4w9WgXcQ");
+
+    input.dispatchEvent(new Event("change"));
+    await el.updateComplete;
+    expect(el.videoUrl).toBe("https://youtu.be/dQw4w9WgXcQ");
+  });
+
+  it("warns about a link the apps could not open, and keeps what was typed", async () => {
+    await mount(el);
+    const musicTab = [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>(".tab")].find(
+      (b) => b.textContent?.trim() === "Music"
+    )!;
+    musicTab.click();
+    await el.updateComplete;
+
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>(".video-field input.text-input")!;
+    input.value = "javascript:alert(1)";
+    input.dispatchEvent(new Event("input"));
+    input.dispatchEvent(new Event("change"));
+    await el.updateComplete;
+
+    expect(el.videoUrl).toBe("javascript:alert(1)"); // saved verbatim, never silently "repaired"
+    expect(el.shadowRoot!.querySelector(".video-field .field-note.warn")).not.toBeNull();
+  });
+
+  it("offers a 'Watch video' link on the sheet only for an openable URL", async () => {
+    el.readonly = true;
+    el.body = "Amazing grace";
+    await mount(el);
+    expect(el.shadowRoot!.querySelector(".header .video-link")).toBeNull();
+
+    el.videoUrl = "javascript:alert(1)";
+    await el.updateComplete;
+    expect(el.shadowRoot!.querySelector(".header .video-link")).toBeNull();
+
+    el.videoUrl = "youtu.be/dQw4w9WgXcQ";
+    await el.updateComplete;
+    const link = el.shadowRoot!.querySelector<HTMLAnchorElement>(".header .video-link")!;
+    expect(link.getAttribute("href")).toBe("https://youtu.be/dQw4w9WgXcQ");
+    expect(link.getAttribute("rel")).toBe("noopener noreferrer");
+  });
 });

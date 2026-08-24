@@ -14,6 +14,7 @@ import {
   getChordsInSong,
   displayLines,
   getDiagramSVG,
+  normalizeVideoUrl,
   type SheetLine,
 } from "../src/index.js";
 
@@ -365,5 +366,46 @@ describe("note tables (sanity)", () => {
   it("guitar shapes are 6 strings, ukulele shapes are 4", () => {
     expect(GUITAR_SHAPES.C).toHaveLength(6);
     expect(UKULELE_SHAPES.C).toHaveLength(4);
+  });
+});
+
+describe("normalizeVideoUrl", () => {
+  it("keeps a full YouTube watch URL as-is", () => {
+    expect(normalizeVideoUrl("https://www.youtube.com/watch?v=dQw4w9WgXcQ")).toBe(
+      "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+    );
+  });
+
+  it("adds https:// to a scheme-less link and trims surrounding space", () => {
+    expect(normalizeVideoUrl("  youtu.be/dQw4w9WgXcQ  ")).toBe("https://youtu.be/dQw4w9WgXcQ");
+  });
+
+  it("accepts platforms other than YouTube", () => {
+    expect(normalizeVideoUrl("https://vimeo.com/76979871")).toBe("https://vimeo.com/76979871");
+    expect(normalizeVideoUrl("https://www.facebook.com/church/videos/123")).toBe(
+      "https://www.facebook.com/church/videos/123"
+    );
+    // A church streaming from its own domain is as valid as any provider.
+    expect(normalizeVideoUrl("http://stream.mychurch.org/service.m3u8")).toBe(
+      "http://stream.mychurch.org/service.m3u8"
+    );
+  });
+
+  it("returns null for an empty or whitespace-only value", () => {
+    expect(normalizeVideoUrl("")).toBeNull();
+    expect(normalizeVideoUrl("   ")).toBeNull();
+  });
+
+  it("rejects a scheme the apps must never open", () => {
+    // Parsed first and protocol-checked after, "javascript:alert(1)" would look like a valid URL.
+    expect(normalizeVideoUrl("javascript:alert(1)")).toBeNull();
+    expect(normalizeVideoUrl("data:text/html,<script>x</script>")).toBeNull();
+    expect(normalizeVideoUrl("file:///etc/passwd")).toBeNull();
+    expect(normalizeVideoUrl("vercast://song/1")).toBeNull();
+  });
+
+  it("rejects a typed fragment that is not a host", () => {
+    expect(normalizeVideoUrl("watch this later")).toBeNull();
+    expect(normalizeVideoUrl("https://watch")).toBeNull();
   });
 });
