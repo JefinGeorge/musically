@@ -361,6 +361,21 @@ function normalizeVideoUrl(raw) {
   if (!url.hostname.includes(".")) return null;
   return url.toString();
 }
+var MAX_SONG_TAGS = 10;
+var MAX_TAG_LENGTH = 40;
+function parseTags(input) {
+  const parts = typeof input === "string" ? input.split(",") : [...input ?? []].flatMap((t) => String(t).split(","));
+  const seen = /* @__PURE__ */ new Set();
+  const out = [];
+  for (const p of parts) {
+    const t = p.replace(/\s+/g, " ").trim().slice(0, MAX_TAG_LENGTH).trim();
+    const key = t.toLocaleLowerCase();
+    if (!t || seen.has(key)) continue;
+    seen.add(key);
+    out.push(t);
+  }
+  return out;
+}
 var DEFAULTS = {
   accent: "#1d4ed8",
   root: "#1e3a8a",
@@ -434,6 +449,6 @@ function getDiagramSVG(symbol, instrument = "piano", options = {}) {
   return shape ? fretboardSVG(shape, o) : placeholderSVG(o);
 }
 
-export { GUITAR_SHAPES, SECTION_TYPES, SHARP_NOTES, SONG_KEYS, UKULELE_SHAPES, __decorateClass, chordNotes, displayLines, getChordsInSong, getDiagramSVG, getShape, normalizeVideoUrl, parseChord, parseChordPro, parseLine, qualityIntervals, sectionTypeFromLabel, transposeChord, transposeNote };
-//# sourceMappingURL=chunk-L7CJNN5U.js.map
-//# sourceMappingURL=chunk-L7CJNN5U.js.map
+export { GUITAR_SHAPES, MAX_SONG_TAGS, MAX_TAG_LENGTH, SECTION_TYPES, SHARP_NOTES, SONG_KEYS, UKULELE_SHAPES, __decorateClass, chordNotes, displayLines, getChordsInSong, getDiagramSVG, getShape, normalizeVideoUrl, parseChord, parseChordPro, parseLine, parseTags, qualityIntervals, sectionTypeFromLabel, transposeChord, transposeNote };
+//# sourceMappingURL=chunk-I7LYIN3U.js.map
+//# sourceMappingURL=chunk-I7LYIN3U.js.map

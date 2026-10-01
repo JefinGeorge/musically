@@ -1,4 +1,4 @@
-import { __decorateClass, getDiagramSVG, chordNotes, SONG_KEYS, normalizeVideoUrl, getChordsInSong, displayLines, parseChordPro, transposeNote } from './chunk-L7CJNN5U.js';
+import { __decorateClass, getDiagramSVG, chordNotes, SONG_KEYS, parseTags, MAX_SONG_TAGS, normalizeVideoUrl, getChordsInSong, displayLines, parseChordPro, transposeNote } from './chunk-I7LYIN3U.js';
 import { css, LitElement, nothing, html } from 'lit';
 import { property, customElement, state } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
@@ -94,6 +94,7 @@ var ChordSheet = class extends LitElement {
     this.timeSignature = "";
     this.rhythmPattern = "";
     this.videoUrl = "";
+    this.tags = [];
     this.transpose = 0;
     this.instrument = "piano";
     this.showDiagrams = true;
@@ -102,6 +103,7 @@ var ChordSheet = class extends LitElement {
     this.languages = [];
     this.transliterations = [];
     this.tab = "editor";
+    this.tagsText = "";
     this.xlitTab = 0;
   }
   emitChange() {
@@ -127,6 +129,7 @@ var ChordSheet = class extends LitElement {
           timeSignature: this.timeSignature,
           rhythmPattern: this.rhythmPattern,
           videoUrl: this.videoUrl,
+          tags: this.tags,
           transpose: this.transpose,
           instrument: this.instrument,
           transliterations: this.transliterations
@@ -220,7 +223,8 @@ var ChordSheet = class extends LitElement {
       { id: "music", label: "Music" },
       { id: "translit", label: `Transliterations${this.transliterations.length ? ` (${this.transliterations.length})` : ""}` },
       { id: "chords", label: "Chords" },
-      { id: "permissions", label: "Permissions" }
+      { id: "permissions", label: "Permissions" },
+      { id: "tags", label: `Tags${this.tags.length ? ` (${this.tags.length})` : ""}` }
     ];
     return html`<div class="tabs">
       ${tabs.map(
@@ -263,6 +267,39 @@ var ChordSheet = class extends LitElement {
       ${this.renderTextField("Copyright", this.copyright, (v) => this.copyright = v, "e.g. \xA9 2026 World Healing Music")}
       ${this.renderTextField("License", this.license, (v) => this.license = v, "e.g. CCLI License #1234567")}
       ${this.renderTextField("Permissions", this.permissions, (v) => this.permissions = v, "e.g. Used by permission.")}
+    </div>`;
+  }
+  /** Re-seed the Tags text when the host sets `tags`, unless it already reads as those tags. */
+  willUpdate(changed) {
+    super.willUpdate?.(changed);
+    if (changed.has("tags") && parseTags(this.tagsText).join("\n") !== (this.tags ?? []).join("\n")) {
+      this.tagsText = (this.tags ?? []).join(", ");
+    }
+  }
+  // ── Tags tab (search tags — other spellings, comma-separated, up to MAX_SONG_TAGS) ──
+  renderTagsTab() {
+    const over = this.tags.length > MAX_SONG_TAGS;
+    return html`<div class="tag-fields">
+      <label class="field grow">
+        Search tags
+        <input
+          class="text-input"
+          .value=${this.tagsText}
+          placeholder="e.g. yesu, nadha, karthave"
+          @input=${(e) => {
+      this.tagsText = e.target.value;
+      this.tags = parseTags(this.tagsText);
+      this.emitChange();
+    }}
+          @change=${() => {
+      this.tagsText = this.tags.join(", ");
+    }}
+        />
+      </label>
+      <div class=${"field-note" + (over ? " warn" : "")}>
+        ${over ? `${this.tags.length} tags \u2014 at most ${MAX_SONG_TAGS}. Remove ${this.tags.length - MAX_SONG_TAGS}.` : `${this.tags.length} of ${MAX_SONG_TAGS}. Other ways people type this song \u2014 "yesu" for "Yeshu", "nadha" for "natha" \u2014 separated by commas. Search matches them right after the title.`}
+      </div>
+      ${this.tags.length ? html`<div class="tag-chips">${this.tags.map((t) => html`<span class="tag-chip">${t}</span>`)}</div>` : null}
     </div>`;
   }
   // ── Music tab (chords flag + performance metadata) ──
@@ -570,7 +607,7 @@ var ChordSheet = class extends LitElement {
               ></textarea>
               ${this.renderSheet()}
             </div>
-          ` : this.tab === "credits" ? this.renderCreditsTab() : this.tab === "music" ? this.renderMusicTab() : this.tab === "translit" ? this.renderTransliterationsTab() : this.tab === "chords" ? this.renderChordsTab() : this.renderPermissionsTab()}
+          ` : this.tab === "credits" ? this.renderCreditsTab() : this.tab === "music" ? this.renderMusicTab() : this.tab === "translit" ? this.renderTransliterationsTab() : this.tab === "chords" ? this.renderChordsTab() : this.tab === "permissions" ? this.renderPermissionsTab() : this.renderTagsTab()}
     `;
   }
 };
@@ -909,6 +946,25 @@ ChordSheet.styles = css`
       flex-direction: column;
       gap: 12px;
     }
+    /* Tags tab: one comma-separated line, a count, and the tags as chips. */
+    .tag-fields {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .tag-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .tag-chip {
+      font-size: 12px;
+      padding: 2px 9px;
+      border-radius: 999px;
+      border: 1px solid var(--musically-border, #e4dcc8);
+      color: var(--musically-muted, #8a8169);
+    }
     /* Credits / licensing footer under the lyrics — fine print. */
     .credits-footer {
       margin-top: 18px;
@@ -1013,6 +1069,9 @@ __decorateClass([
   property({ attribute: "video-url" })
 ], ChordSheet.prototype, "videoUrl", 2);
 __decorateClass([
+  property({ attribute: false })
+], ChordSheet.prototype, "tags", 2);
+__decorateClass([
   property({ type: Number })
 ], ChordSheet.prototype, "transpose", 2);
 __decorateClass([
@@ -1036,6 +1095,9 @@ __decorateClass([
 __decorateClass([
   state()
 ], ChordSheet.prototype, "tab", 2);
+__decorateClass([
+  state()
+], ChordSheet.prototype, "tagsText", 2);
 __decorateClass([
   state()
 ], ChordSheet.prototype, "xlitTab", 2);

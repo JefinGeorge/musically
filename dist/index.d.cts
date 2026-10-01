@@ -97,6 +97,20 @@ declare function getChordsInSong(text: string, transpose?: number): string[];
  * `javascript:` and `data:` must never survive that trip.
  */
 declare function normalizeVideoUrl(raw: string): string | null;
+/** At most this many search tags on a song. */
+declare const MAX_SONG_TAGS = 10;
+/** A tag is a spelling, not a sentence. */
+declare const MAX_TAG_LENGTH = 40;
+/**
+ * Search tags as typed — `"yesu, Yesu ,nadha,,"` or a list — cleaned: split on commas, trimmed, inner
+ * spaces collapsed, empties dropped, duplicates dropped ignoring case (the first spelling kept), each
+ * cut to {@link MAX_TAG_LENGTH} characters.
+ *
+ * Tags are the other ways people type a song's title or words ("yesu" for "Yeshu", "nadha" for
+ * "natha"), so a search finds the song however it is spelt. Not capped at {@link MAX_SONG_TAGS}
+ * here, so an editor can tell the contributor there are too many rather than silently dropping some.
+ */
+declare function parseTags(input: string | readonly string[] | null | undefined): string[];
 /**
  * Generate a chord diagram as an SVG string.
  * Piano works for any chord (computed from theory); guitar/ukulele use the
@@ -104,4 +118,4 @@ declare function normalizeVideoUrl(raw: string): string | null;
  */
 declare function getDiagramSVG(symbol: string, instrument?: Instrument, options?: DiagramOptions): string;
 
-export { type ChordSegment, type DiagramOptions, GUITAR_SHAPES, type Instrument, type ParsedChord, SECTION_TYPES, SHARP_NOTES, SONG_KEYS, type SectionType, type SheetLine, UKULELE_SHAPES, chordNotes, displayLines, getChordsInSong, getDiagramSVG, getShape, normalizeVideoUrl, parseChord, parseChordPro, parseLine, qualityIntervals, sectionTypeFromLabel, transposeChord, transposeNote };
+export { type ChordSegment, type DiagramOptions, GUITAR_SHAPES, type Instrument, MAX_SONG_TAGS, MAX_TAG_LENGTH, type ParsedChord, SECTION_TYPES, SHARP_NOTES, SONG_KEYS, type SectionType, type SheetLine, UKULELE_SHAPES, chordNotes, displayLines, getChordsInSong, getDiagramSVG, getShape, normalizeVideoUrl, parseChord, parseChordPro, parseLine, parseTags, qualityIntervals, sectionTypeFromLabel, transposeChord, transposeNote };

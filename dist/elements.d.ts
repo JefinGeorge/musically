@@ -72,6 +72,11 @@ declare class ChordSheet extends LitElement {
      * which is why it is normalised (`normalizeVideoUrl`) rather than stored verbatim.
      */
     videoUrl: string;
+    /**
+     * Search tags — other ways people type the song ("yesu" for "Yeshu", "nadha" for "natha"), at most
+     * {@link MAX_SONG_TAGS}. Edited as one comma-separated line on the Tags tab; never shown on the sheet.
+     */
+    tags: string[];
     /** Semitones to shift all chords. */
     transpose: number;
     /** Diagram instrument. */
@@ -88,6 +93,8 @@ declare class ChordSheet extends LitElement {
     transliterations: Transliteration[];
     /** Which editor tab is active. */
     private tab;
+    /** The Tags tab's text as typed — kept apart from `tags` so a trailing comma or space survives typing. */
+    private tagsText;
     /** Which transliteration tab is active (index into transliterations). */
     private xlitTab;
     static styles: lit.CSSResult;
@@ -106,6 +113,9 @@ declare class ChordSheet extends LitElement {
     private renderTextField;
     private renderCreditsTab;
     private renderPermissionsTab;
+    /** Re-seed the Tags text when the host sets `tags`, unless it already reads as those tags. */
+    protected willUpdate(changed: Map<PropertyKey, unknown>): void;
+    private renderTagsTab;
     private renderMusicTab;
     /**
      * Video link (Music tab). Normalised on `change` — blur or Enter — rather than on every keystroke:

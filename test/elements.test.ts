@@ -413,6 +413,47 @@ describe("<chord-sheet>", () => {
     expect(detail.permissions).toBe("Used by permission.");
   });
 
+  it("edits search tags on the Tags tab — comma-separated, cleaned, emitted, counted against 10", async () => {
+    await mount(el);
+    let detail: any = null;
+    el.addEventListener("change", (e) => (detail = (e as CustomEvent).detail));
+    const tab = () =>
+      [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>(".tab")].find((b) => b.textContent?.trim().startsWith("Tags"))!;
+    tab().click();
+    await el.updateComplete;
+
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>(".tag-fields input.text-input")!;
+    input.value = "yesu,  Nadha , YESU,, ";
+    input.dispatchEvent(new Event("input"));
+    await el.updateComplete;
+    expect(el.tags).toEqual(["yesu", "Nadha"]);
+    expect(detail.tags).toEqual(["yesu", "Nadha"]);
+    expect(input.value).toBe("yesu,  Nadha , YESU,, "); // not rewritten mid-type
+    expect(tab().textContent?.trim()).toBe("Tags (2)");
+    expect([...el.shadowRoot!.querySelectorAll(".tag-chip")].map((c) => c.textContent)).toEqual(["yesu", "Nadha"]);
+
+    input.dispatchEvent(new Event("change"));
+    await el.updateComplete;
+    expect(input.value).toBe("yesu, Nadha");
+
+    input.value = Array.from({ length: 11 }, (_, i) => `t${i}`).join(",");
+    input.dispatchEvent(new Event("input"));
+    await el.updateComplete;
+    expect(el.tags).toHaveLength(11); // kept, so the host can refuse — not silently dropped
+    expect(el.shadowRoot!.querySelector(".tag-fields .field-note.warn")?.textContent).toContain("at most 10");
+  });
+
+  it("shows tags set by the host and never prints them on the sheet", async () => {
+    el.tags = ["yesu", "nadha"];
+    await mount(el);
+    [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>(".tab")].find((b) => b.textContent?.trim().startsWith("Tags"))!.click();
+    await el.updateComplete;
+    expect(el.shadowRoot!.querySelector<HTMLInputElement>(".tag-fields input")!.value).toBe("yesu, nadha");
+    el.readonly = true;
+    await el.updateComplete;
+    expect(el.shadowRoot!.textContent).not.toContain("nadha");
+  });
+
   it("renders the credits footer under the lyrics — non-empty lines only, in order", async () => {
     el.readonly = true;
     el.body = "Amazing grace";

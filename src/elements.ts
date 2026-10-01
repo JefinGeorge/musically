@@ -25,6 +25,8 @@ import {
   chordNotes,
   getDiagramSVG,
   normalizeVideoUrl,
+  parseTags,
+  MAX_SONG_TAGS,
   transposeNote,
   SONG_KEYS,
 } from "./index.js";
@@ -165,6 +167,11 @@ export class ChordSheet extends LitElement {
    * which is why it is normalised (`normalizeVideoUrl`) rather than stored verbatim.
    */
   @property({ attribute: "video-url" }) videoUrl = "";
+  /**
+   * Search tags — other ways people type the song ("yesu" for "Yeshu", "nadha" for "natha"), at most
+   * {@link MAX_SONG_TAGS}. Edited as one comma-separated line on the Tags tab; never shown on the sheet.
+   */
+  @property({ attribute: false }) tags: string[] = [];
   /** Semitones to shift all chords. */
   @property({ type: Number }) transpose = 0;
   /** Diagram instrument. */
@@ -181,7 +188,9 @@ export class ChordSheet extends LitElement {
   @property({ attribute: false }) transliterations: Transliteration[] = [];
 
   /** Which editor tab is active. */
-  @state() private tab: "editor" | "credits" | "music" | "translit" | "chords" | "permissions" = "editor";
+  @state() private tab: "editor" | "credits" | "music" | "translit" | "chords" | "permissions" | "tags" = "editor";
+  /** The Tags tab's text as typed — kept apart from `tags` so a trailing comma or space survives typing. */
+  @state() private tagsText = "";
   /** Which transliteration tab is active (index into transliterations). */
   @state() private xlitTab = 0;
 
@@ -520,6 +529,25 @@ export class ChordSheet extends LitElement {
       flex-direction: column;
       gap: 12px;
     }
+    /* Tags tab: one comma-separated line, a count, and the tags as chips. */
+    .tag-fields {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .tag-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .tag-chip {
+      font-size: 12px;
+      padding: 2px 9px;
+      border-radius: 999px;
+      border: 1px solid var(--musically-border, #e4dcc8);
+      color: var(--musically-muted, #8a8169);
+    }
     /* Credits / licensing footer under the lyrics — fine print. */
     .credits-footer {
       margin-top: 18px;
@@ -593,6 +621,7 @@ export class ChordSheet extends LitElement {
           timeSignature: this.timeSignature,
           rhythmPattern: this.rhythmPattern,
           videoUrl: this.videoUrl,
+          tags: this.tags,
           transpose: this.transpose,
           instrument: this.instrument,
           transliterations: this.transliterations,
@@ -693,13 +722,14 @@ export class ChordSheet extends LitElement {
   }
 
   private renderTabs() {
-    const tabs: { id: "editor" | "credits" | "music" | "translit" | "chords" | "permissions"; label: string }[] = [
+    const tabs: { id: "editor" | "credits" | "music" | "translit" | "chords" | "permissions" | "tags"; label: string }[] = [
       { id: "editor", label: "Editor" },
       { id: "credits", label: "Credits" },
       { id: "music", label: "Music" },
       { id: "translit", label: `Transliterations${this.transliterations.length ? ` (${this.transliterations.length})` : ""}` },
       { id: "chords", label: "Chords" },
       { id: "permissions", label: "Permissions" },
+      { id: "tags", label: `Tags${this.tags.length ? ` (${this.tags.length})` : ""}` },
     ];
     return html`<div class="tabs">
       ${tabs.map(
@@ -745,6 +775,45 @@ export class ChordSheet extends LitElement {
       ${this.renderTextField("Copyright", this.copyright, (v) => (this.copyright = v), "e.g. © 2026 World Healing Music")}
       ${this.renderTextField("License", this.license, (v) => (this.license = v), "e.g. CCLI License #1234567")}
       ${this.renderTextField("Permissions", this.permissions, (v) => (this.permissions = v), "e.g. Used by permission.")}
+    </div>`;
+  }
+
+  /** Re-seed the Tags text when the host sets `tags`, unless it already reads as those tags. */
+  protected override willUpdate(changed: Map<PropertyKey, unknown>) {
+    super.willUpdate?.(changed);
+    if (changed.has("tags") && parseTags(this.tagsText).join("\n") !== (this.tags ?? []).join("\n")) {
+      this.tagsText = (this.tags ?? []).join(", ");
+    }
+  }
+
+  // ── Tags tab (search tags — other spellings, comma-separated, up to MAX_SONG_TAGS) ──
+  private renderTagsTab() {
+    const over = this.tags.length > MAX_SONG_TAGS;
+    return html`<div class="tag-fields">
+      <label class="field grow">
+        Search tags
+        <input
+          class="text-input"
+          .value=${this.tagsText}
+          placeholder="e.g. yesu, nadha, karthave"
+          @input=${(e: Event) => {
+            this.tagsText = (e.target as HTMLInputElement).value;
+            this.tags = parseTags(this.tagsText);
+            this.emitChange();
+          }}
+          @change=${() => {
+            this.tagsText = this.tags.join(", ");
+          }}
+        />
+      </label>
+      <div class=${"field-note" + (over ? " warn" : "")}>
+        ${over
+          ? `${this.tags.length} tags — at most ${MAX_SONG_TAGS}. Remove ${this.tags.length - MAX_SONG_TAGS}.`
+          : `${this.tags.length} of ${MAX_SONG_TAGS}. Other ways people type this song — "yesu" for "Yeshu", "nadha" for "natha" — separated by commas. Search matches them right after the title.`}
+      </div>
+      ${this.tags.length
+        ? html`<div class="tag-chips">${this.tags.map((t) => html`<span class="tag-chip">${t}</span>`)}</div>`
+        : null}
     </div>`;
   }
 
@@ -1092,7 +1161,9 @@ export class ChordSheet extends LitElement {
               ? this.renderTransliterationsTab()
               : this.tab === "chords"
                 ? this.renderChordsTab()
-                : this.renderPermissionsTab()}
+                : this.tab === "permissions"
+                  ? this.renderPermissionsTab()
+                  : this.renderTagsTab()}
     `;
   }
 }

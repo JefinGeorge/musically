@@ -342,6 +342,35 @@ export function normalizeVideoUrl(raw: string): string | null {
   return url.toString();
 }
 
+/** At most this many search tags on a song. */
+export const MAX_SONG_TAGS = 10;
+/** A tag is a spelling, not a sentence. */
+export const MAX_TAG_LENGTH = 40;
+
+/**
+ * Search tags as typed — `"yesu, Yesu ,nadha,,"` or a list — cleaned: split on commas, trimmed, inner
+ * spaces collapsed, empties dropped, duplicates dropped ignoring case (the first spelling kept), each
+ * cut to {@link MAX_TAG_LENGTH} characters.
+ *
+ * Tags are the other ways people type a song's title or words ("yesu" for "Yeshu", "nadha" for
+ * "natha"), so a search finds the song however it is spelt. Not capped at {@link MAX_SONG_TAGS}
+ * here, so an editor can tell the contributor there are too many rather than silently dropping some.
+ */
+export function parseTags(input: string | readonly string[] | null | undefined): string[] {
+  const parts =
+    typeof input === "string" ? input.split(",") : [...(input ?? [])].flatMap((t) => String(t).split(","));
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const p of parts) {
+    const t = p.replace(/\s+/g, " ").trim().slice(0, MAX_TAG_LENGTH).trim();
+    const key = t.toLocaleLowerCase();
+    if (!t || seen.has(key)) continue;
+    seen.add(key);
+    out.push(t);
+  }
+  return out;
+}
+
 /* ------------------------------------------------------------------ */
 /* SVG diagram generation                                             */
 /* ------------------------------------------------------------------ */

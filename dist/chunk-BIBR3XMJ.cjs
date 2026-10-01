@@ -363,6 +363,21 @@ function normalizeVideoUrl(raw) {
   if (!url.hostname.includes(".")) return null;
   return url.toString();
 }
+var MAX_SONG_TAGS = 10;
+var MAX_TAG_LENGTH = 40;
+function parseTags(input) {
+  const parts = typeof input === "string" ? input.split(",") : [...input ?? []].flatMap((t) => String(t).split(","));
+  const seen = /* @__PURE__ */ new Set();
+  const out = [];
+  for (const p of parts) {
+    const t = p.replace(/\s+/g, " ").trim().slice(0, MAX_TAG_LENGTH).trim();
+    const key = t.toLocaleLowerCase();
+    if (!t || seen.has(key)) continue;
+    seen.add(key);
+    out.push(t);
+  }
+  return out;
+}
 var DEFAULTS = {
   accent: "#1d4ed8",
   root: "#1e3a8a",
@@ -437,6 +452,8 @@ function getDiagramSVG(symbol, instrument = "piano", options = {}) {
 }
 
 exports.GUITAR_SHAPES = GUITAR_SHAPES;
+exports.MAX_SONG_TAGS = MAX_SONG_TAGS;
+exports.MAX_TAG_LENGTH = MAX_TAG_LENGTH;
 exports.SECTION_TYPES = SECTION_TYPES;
 exports.SHARP_NOTES = SHARP_NOTES;
 exports.SONG_KEYS = SONG_KEYS;
@@ -451,9 +468,10 @@ exports.normalizeVideoUrl = normalizeVideoUrl;
 exports.parseChord = parseChord;
 exports.parseChordPro = parseChordPro;
 exports.parseLine = parseLine;
+exports.parseTags = parseTags;
 exports.qualityIntervals = qualityIntervals;
 exports.sectionTypeFromLabel = sectionTypeFromLabel;
 exports.transposeChord = transposeChord;
 exports.transposeNote = transposeNote;
-//# sourceMappingURL=chunk-II4BAJMC.cjs.map
-//# sourceMappingURL=chunk-II4BAJMC.cjs.map
+//# sourceMappingURL=chunk-BIBR3XMJ.cjs.map
+//# sourceMappingURL=chunk-BIBR3XMJ.cjs.map

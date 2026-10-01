@@ -409,3 +409,13 @@ describe("normalizeVideoUrl", () => {
     expect(normalizeVideoUrl("https://watch")).toBeNull();
   });
 });
+
+describe("parseTags", () => {
+  it("splits on commas, trims, collapses spaces, drops empties and case-insensitive repeats", async () => {
+    const { parseTags } = await import("../src/index.js");
+    expect(parseTags("yesu, Yesu ,nadha,,  ")).toEqual(["yesu", "nadha"]);
+    expect(parseTags(["yesu  raja", "a,b"])).toEqual(["yesu raja", "a", "b"]);
+    expect(parseTags(null)).toEqual([]);
+    expect(parseTags("x".repeat(60))[0]).toHaveLength(40);
+  });
+});

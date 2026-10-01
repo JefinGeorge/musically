@@ -17,6 +17,7 @@ Musically ships as standard **Web Components**, so it drops into **React, Angula
 - **Multi-language & transliterations** — tag a sheet with its language, offer a language list, and attach alternate-script versions shown in their own tab. Each transliteration can credit its author via **Transliterated by** *(v2.4)*.
 - **Contributor credits** *(v2.4)* — credit a chords contributor via **Chords contributed by** in the Chords tab (shown only when the song has chords).
 - **Permissions & credits footer** *(v2.5)* — a **Permissions** tab collects `copyright`, `license`, and `permissions` lines; the reader renders a fine-print footer under the lyrics with each non-empty line — `Written by …`, `Composed by …`, then the copyright / permissions / license lines verbatim.
+- **Search tags** *(v2.7)* — a **Tags** tab collects up to 10 comma-separated search tags (`tags`) — other ways people type the song, e.g. `yesu` for *Yeshu*, `nadha` for *natha*. Never shown on the sheet; the host's search matches them. `parseTags()` cleans a typed list the same way.
 - **Video link** *(v2.6)* — collect an external video URL for a song (YouTube, Vimeo, or any other streaming platform) in the **Music** tab. Stored as a link, never an embed: the reader shows a **▶ Watch video** link and the mobile apps hand it to the phone.
 - **Performance & print views** — a clean, large reading layout for live use.
 - **Themeable** — restyle everything through CSS custom properties.
@@ -149,6 +150,7 @@ The full editor + sheet renderer.
 | `copyright` | `string` | `""` | Copyright line, shown verbatim in the credits footer (e.g. `© 2026 World Healing Music`). Collected in the Permissions tab. *(v2.5)* |
 | `license` | `string` | `""` | Licensing line, shown verbatim in the credits footer (e.g. `CCLI License #1234567`). Permissions tab. *(v2.5)* |
 | `permissions` | `string` | `""` | Usage-permission line, shown verbatim in the credits footer (e.g. `Used by permission.`). Permissions tab. *(v2.5)* |
+| `tags` | `string[]` | `[]` | Search tags — other spellings of the song, at most 10 (`MAX_SONG_TAGS`). Property only (no attribute). Tags tab. *(v2.7)* |
 | `song-key` | `string` | `""` | Original key (transposes along with the song). |
 | `has-chords` | `boolean` | `false` | Whether the song *officially* carries chords. When `false`, embedded `[chords]` are ignored on display and inter-line spacing is tightened (lyrics-only). *(v2.2)* |
 | `tempo` | `number` | `0` | Beats per minute (`0` = unset). *(v2.2)* |
@@ -167,9 +169,9 @@ The full editor + sheet renderer.
 
 `LanguageOption` is `{ code: string; name: string }`; `Transliteration` is `{ language: string; body: string; title?: string; transliteratedBy?: string }` — `transliteratedBy` credits whoever produced that transliteration.
 
-The editor is organised into **Editor**, **Credits**, **Music**, **Transliterations**, **Chords**, and **Permissions** tabs. Section labels (lines starting with `#`) are classified as `intro`, `verse`, `pre-chorus`, `chorus`, `bridge`, `outro`, or generic `section`. In `readonly` (reader) mode a fine-print credits footer is rendered under the lyrics from `author`/`composer`/`copyright`/`permissions`/`license` — each line shown only when non-empty.
+The editor is organised into **Editor**, **Credits**, **Music**, **Transliterations**, **Chords**, **Permissions**, and **Tags** tabs. Section labels (lines starting with `#`) are classified as `intro`, `verse`, `pre-chorus`, `chorus`, `bridge`, `outro`, or generic `section`. In `readonly` (reader) mode a fine-print credits footer is rendered under the lyrics from `author`/`composer`/`copyright`/`permissions`/`license` — each line shown only when non-empty.
 
-**Event:** `change` — fired when the body or any field changes. `event.detail` contains `{ body, title, artist, author, composer, musicDirector, chordsContributedBy, copyright, license, permissions, language, songKey, hasChords, tempo, preferredKey, mode, timeSignature, rhythmPattern, videoUrl, transpose, instrument, transliterations }`.
+**Event:** `change` — fired when the body or any field changes. `event.detail` contains `{ body, title, artist, author, composer, musicDirector, chordsContributedBy, copyright, license, permissions, language, songKey, hasChords, tempo, preferredKey, mode, timeSignature, rhythmPattern, videoUrl, tags, transpose, instrument, transliterations }`.
 
 ### `<chord-diagram>`
 
