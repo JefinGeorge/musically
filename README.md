@@ -18,7 +18,7 @@ Musically ships as standard **Web Components**, so it drops into **React, Angula
 - **Contributor credits** *(v2.4)* — credit a chords contributor via **Chords contributed by** in the Chords tab (shown only when the song has chords).
 - **Permissions & credits footer** *(v2.5)* — a **Permissions** tab collects `copyright`, `license`, and `permissions` lines; the reader renders a fine-print footer under the lyrics with each non-empty line — `Written by …`, `Composed by …`, then the copyright / permissions / license lines verbatim.
 - **Video link** *(v2.6)* — collect an external video URL for a song (YouTube, Vimeo, or any other streaming platform) in the **Music** tab. Stored as a link, never an embed: the reader shows a **▶ Watch video** link and the mobile apps hand it to the phone.
-- **Search tags** *(v2.7)* — a **Tags** tab collects up to 10 comma-separated search tags (`tags`) — other ways people type the song, e.g. `yesu` for *Yeshu*, `nadha` for *natha*. Never shown on the sheet; the host's search matches them. `parseTags()` cleans a typed list the same way.
+- **Search tags** *(v2.7)* — a **Tags** tab collects up to 10 (a hard stop) comma-separated search tags (`tags`) — other ways people type the song, e.g. `yesu` for *Yeshu*, `nadha` for *natha*. Never shown on the sheet; the host's search matches them. `parseTags()` cleans a typed list the same way.
 - **Reader mode** — set `readonly` to hide the editor and show only the sheet, with the credits footer and video link. The editor stacks into one column on narrow screens (≤ 720px).
 - **Themeable** — restyle everything through CSS custom properties.
 - **Headless core** — use the theory engine on its own, no UI required.
@@ -186,7 +186,7 @@ The full editor + sheet renderer.
 | `copyright` | `string` | `""` | Copyright line, shown verbatim in the credits footer (e.g. `© 2026 World Healing Music`). Collected in the Permissions tab. *(v2.5)* |
 | `license` | `string` | `""` | Licensing line, shown verbatim in the credits footer (e.g. `CCLI License #1234567`). Permissions tab. *(v2.5)* |
 | `permissions` | `string` | `""` | Usage-permission line, shown verbatim in the credits footer (e.g. `Used by permission.`). Permissions tab. *(v2.5)* |
-| `tags` | `string[]` | `[]` | Search tags — other spellings of the song, at most 10 (`MAX_SONG_TAGS`). Property only (no attribute). Tags tab. *(v2.7)* |
+| `tags` | `string[]` | `[]` | Search tags — other spellings of the song, at most 10 (`MAX_SONG_TAGS`; the tab won't take more). Property only (no attribute). Tags tab. *(v2.7)* |
 | `song-key` | `string` | `""` | Original key (transposes along with the song). |
 | `has-chords` | `boolean` | `false` | Whether the song *officially* carries chords. When `false`, embedded `[chords]` are ignored on display and inter-line spacing is tightened (lyrics-only). *(v2.2)* |
 | `tempo` | `number` | `0` | Beats per minute (`0` = unset). *(v2.2)* |
@@ -230,7 +230,7 @@ People type the same song in different ways — *Yeshu* as `yesu`, *natha* as `n
 
 - Type them on one line, separated by commas: `yesu, nadha, karthave`. The tab label shows the count — **Tags (3)** — and each tag appears as a chip.
 - Musically cleans the list as you type: spaces trimmed, empty entries and repeats (ignoring case) dropped, each tag cut to 40 characters. The text you're typing isn't rewritten until you leave the field.
-- More than 10 tags are **kept and flagged**, not silently dropped, so your app can refuse to save and tell the person which to remove. Check `detail.tags.length > MAX_SONG_TAGS`.
+- **10 is a hard stop.** Once there are 10, typing an 11th is refused (the text stays as it was) and the note says to remove one first; pasting a longer list keeps the first 10. Tags set by your app that are already over 10 (old data) are flagged with how many to remove, not silently dropped — still check `detail.tags.length > MAX_SONG_TAGS` before saving.
 - Tags are never shown on the sheet — they're for search only.
 
 Use the same cleaning on your server so the two never disagree:
@@ -340,7 +340,8 @@ Works in all evergreen browsers that support native Web Components (custom eleme
 
 | Version | What changed |
 |---|---|
-| **2.7.0** | **Tags** tab — up to 10 comma-separated search tags (`tags`), emitted in `change`. `parseTags()`, `MAX_SONG_TAGS`, `MAX_TAG_LENGTH` exported. Dev tooling updated to vitest 4 (security advisories). |
+| **2.7.1** | The Tags tab stops at 10 — an 11th tag can't be typed, and a pasted list keeps its first 10. |
+| 2.7.0 | **Tags** tab — up to 10 comma-separated search tags (`tags`), emitted in `change`. `parseTags()`, `MAX_SONG_TAGS`, `MAX_TAG_LENGTH` exported. Dev tooling updated to vitest 4 (security advisories). |
 | 2.6.0 | **Video link** on the Music tab (`video-url`), shown as **▶ Watch video** in the reader. `normalizeVideoUrl()` exported. |
 | 2.5.0 | **Permissions** tab (`copyright`, `license`, `permissions`) and the credits footer under the lyrics. |
 | 2.4.x | Credit fields — **Transliterated by** on each transliteration, **Chords contributed by** on the Chords tab; Chords tab spacing. |

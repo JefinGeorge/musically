@@ -169,7 +169,8 @@ export class ChordSheet extends LitElement {
   @property({ attribute: "video-url" }) videoUrl = "";
   /**
    * Search tags — other ways people type the song ("yesu" for "Yeshu", "nadha" for "natha"), at most
-   * {@link MAX_SONG_TAGS}. Edited as one comma-separated line on the Tags tab; never shown on the sheet.
+   * {@link MAX_SONG_TAGS} — the Tags tab won't take more. Edited as one comma-separated line; never
+   * shown on the sheet. A host that sets more (old data) sees them flagged, not dropped.
    */
   @property({ attribute: false }) tags: string[] = [];
   /** Semitones to shift all chords. */
@@ -191,6 +192,8 @@ export class ChordSheet extends LitElement {
   @state() private tab: "editor" | "credits" | "music" | "translit" | "chords" | "permissions" | "tags" = "editor";
   /** The Tags tab's text as typed — kept apart from `tags` so a trailing comma or space survives typing. */
   @state() private tagsText = "";
+  /** Set when the last edit tried to go past MAX_SONG_TAGS and was stopped. */
+  @state() private tagsCapped = false;
   /** Which transliteration tab is active (index into transliterations). */
   @state() private xlitTab = 0;
 
@@ -797,8 +800,24 @@ export class ChordSheet extends LitElement {
           .value=${this.tagsText}
           placeholder="e.g. yesu, nadha, karthave"
           @input=${(e: Event) => {
-            this.tagsText = (e.target as HTMLInputElement).value;
-            this.tags = parseTags(this.tagsText);
+            const input = e.target as HTMLInputElement;
+            const parsed = parseTags(input.value);
+            if (parsed.length > MAX_SONG_TAGS) {
+              // A hard stop at MAX_SONG_TAGS: typing an 11th tag puts the text back as it was; pasting a
+              // longer list keeps the first ten.
+              const kept = parsed.slice(0, MAX_SONG_TAGS);
+              const atLimit = parseTags(this.tagsText).join("\n") === kept.join("\n");
+              this.tagsText = atLimit ? this.tagsText : kept.join(", ");
+              input.value = this.tagsText;
+              this.tagsCapped = true;
+              if (atLimit) return this.requestUpdate();
+              this.tags = kept;
+              this.emitChange();
+              return;
+            }
+            this.tagsCapped = false;
+            this.tagsText = input.value;
+            this.tags = parsed;
             this.emitChange();
           }}
           @change=${() => {
@@ -806,10 +825,12 @@ export class ChordSheet extends LitElement {
           }}
         />
       </label>
-      <div class=${"field-note" + (over ? " warn" : "")}>
+      <div class=${"field-note" + (over || this.tagsCapped ? " warn" : "")}>
         ${over
           ? `${this.tags.length} tags — at most ${MAX_SONG_TAGS}. Remove ${this.tags.length - MAX_SONG_TAGS}.`
-          : `${this.tags.length} of ${MAX_SONG_TAGS}. Other ways people type this song — "yesu" for "Yeshu", "nadha" for "natha" — separated by commas. Search matches them right after the title.`}
+          : this.tagsCapped
+            ? `${MAX_SONG_TAGS} of ${MAX_SONG_TAGS} — a song can have at most ${MAX_SONG_TAGS} tags. Remove one to add another.`
+            : `${this.tags.length} of ${MAX_SONG_TAGS}. Other ways people type this song — "yesu" for "Yeshu", "nadha" for "natha" — separated by commas. Search matches them right after the title.`}
       </div>
       ${this.tags.length
         ? html`<div class="tag-chips">${this.tags.map((t) => html`<span class="tag-chip">${t}</span>`)}</div>`

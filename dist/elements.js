@@ -104,6 +104,7 @@ var ChordSheet = class extends LitElement {
     this.transliterations = [];
     this.tab = "editor";
     this.tagsText = "";
+    this.tagsCapped = false;
     this.xlitTab = 0;
   }
   emitChange() {
@@ -287,8 +288,22 @@ var ChordSheet = class extends LitElement {
           .value=${this.tagsText}
           placeholder="e.g. yesu, nadha, karthave"
           @input=${(e) => {
-      this.tagsText = e.target.value;
-      this.tags = parseTags(this.tagsText);
+      const input = e.target;
+      const parsed = parseTags(input.value);
+      if (parsed.length > MAX_SONG_TAGS) {
+        const kept = parsed.slice(0, MAX_SONG_TAGS);
+        const atLimit = parseTags(this.tagsText).join("\n") === kept.join("\n");
+        this.tagsText = atLimit ? this.tagsText : kept.join(", ");
+        input.value = this.tagsText;
+        this.tagsCapped = true;
+        if (atLimit) return this.requestUpdate();
+        this.tags = kept;
+        this.emitChange();
+        return;
+      }
+      this.tagsCapped = false;
+      this.tagsText = input.value;
+      this.tags = parsed;
       this.emitChange();
     }}
           @change=${() => {
@@ -296,8 +311,8 @@ var ChordSheet = class extends LitElement {
     }}
         />
       </label>
-      <div class=${"field-note" + (over ? " warn" : "")}>
-        ${over ? `${this.tags.length} tags \u2014 at most ${MAX_SONG_TAGS}. Remove ${this.tags.length - MAX_SONG_TAGS}.` : `${this.tags.length} of ${MAX_SONG_TAGS}. Other ways people type this song \u2014 "yesu" for "Yeshu", "nadha" for "natha" \u2014 separated by commas. Search matches them right after the title.`}
+      <div class=${"field-note" + (over || this.tagsCapped ? " warn" : "")}>
+        ${over ? `${this.tags.length} tags \u2014 at most ${MAX_SONG_TAGS}. Remove ${this.tags.length - MAX_SONG_TAGS}.` : this.tagsCapped ? `${MAX_SONG_TAGS} of ${MAX_SONG_TAGS} \u2014 a song can have at most ${MAX_SONG_TAGS} tags. Remove one to add another.` : `${this.tags.length} of ${MAX_SONG_TAGS}. Other ways people type this song \u2014 "yesu" for "Yeshu", "nadha" for "natha" \u2014 separated by commas. Search matches them right after the title.`}
       </div>
       ${this.tags.length ? html`<div class="tag-chips">${this.tags.map((t) => html`<span class="tag-chip">${t}</span>`)}</div>` : null}
     </div>`;
@@ -1098,6 +1113,9 @@ __decorateClass([
 __decorateClass([
   state()
 ], ChordSheet.prototype, "tagsText", 2);
+__decorateClass([
+  state()
+], ChordSheet.prototype, "tagsCapped", 2);
 __decorateClass([
   state()
 ], ChordSheet.prototype, "xlitTab", 2);

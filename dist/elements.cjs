@@ -106,6 +106,7 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
     this.transliterations = [];
     this.tab = "editor";
     this.tagsText = "";
+    this.tagsCapped = false;
     this.xlitTab = 0;
   }
   emitChange() {
@@ -289,8 +290,22 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
           .value=${this.tagsText}
           placeholder="e.g. yesu, nadha, karthave"
           @input=${(e) => {
-      this.tagsText = e.target.value;
-      this.tags = chunkBIBR3XMJ_cjs.parseTags(this.tagsText);
+      const input = e.target;
+      const parsed = chunkBIBR3XMJ_cjs.parseTags(input.value);
+      if (parsed.length > chunkBIBR3XMJ_cjs.MAX_SONG_TAGS) {
+        const kept = parsed.slice(0, chunkBIBR3XMJ_cjs.MAX_SONG_TAGS);
+        const atLimit = chunkBIBR3XMJ_cjs.parseTags(this.tagsText).join("\n") === kept.join("\n");
+        this.tagsText = atLimit ? this.tagsText : kept.join(", ");
+        input.value = this.tagsText;
+        this.tagsCapped = true;
+        if (atLimit) return this.requestUpdate();
+        this.tags = kept;
+        this.emitChange();
+        return;
+      }
+      this.tagsCapped = false;
+      this.tagsText = input.value;
+      this.tags = parsed;
       this.emitChange();
     }}
           @change=${() => {
@@ -298,8 +313,8 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
     }}
         />
       </label>
-      <div class=${"field-note" + (over ? " warn" : "")}>
-        ${over ? `${this.tags.length} tags \u2014 at most ${chunkBIBR3XMJ_cjs.MAX_SONG_TAGS}. Remove ${this.tags.length - chunkBIBR3XMJ_cjs.MAX_SONG_TAGS}.` : `${this.tags.length} of ${chunkBIBR3XMJ_cjs.MAX_SONG_TAGS}. Other ways people type this song \u2014 "yesu" for "Yeshu", "nadha" for "natha" \u2014 separated by commas. Search matches them right after the title.`}
+      <div class=${"field-note" + (over || this.tagsCapped ? " warn" : "")}>
+        ${over ? `${this.tags.length} tags \u2014 at most ${chunkBIBR3XMJ_cjs.MAX_SONG_TAGS}. Remove ${this.tags.length - chunkBIBR3XMJ_cjs.MAX_SONG_TAGS}.` : this.tagsCapped ? `${chunkBIBR3XMJ_cjs.MAX_SONG_TAGS} of ${chunkBIBR3XMJ_cjs.MAX_SONG_TAGS} \u2014 a song can have at most ${chunkBIBR3XMJ_cjs.MAX_SONG_TAGS} tags. Remove one to add another.` : `${this.tags.length} of ${chunkBIBR3XMJ_cjs.MAX_SONG_TAGS}. Other ways people type this song \u2014 "yesu" for "Yeshu", "nadha" for "natha" \u2014 separated by commas. Search matches them right after the title.`}
       </div>
       ${this.tags.length ? lit.html`<div class="tag-chips">${this.tags.map((t) => lit.html`<span class="tag-chip">${t}</span>`)}</div>` : null}
     </div>`;
@@ -1100,6 +1115,9 @@ chunkBIBR3XMJ_cjs.__decorateClass([
 chunkBIBR3XMJ_cjs.__decorateClass([
   decorators_js.state()
 ], exports.ChordSheet.prototype, "tagsText", 2);
+chunkBIBR3XMJ_cjs.__decorateClass([
+  decorators_js.state()
+], exports.ChordSheet.prototype, "tagsCapped", 2);
 chunkBIBR3XMJ_cjs.__decorateClass([
   decorators_js.state()
 ], exports.ChordSheet.prototype, "xlitTab", 2);

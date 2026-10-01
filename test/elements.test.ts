@@ -413,7 +413,7 @@ describe("<chord-sheet>", () => {
     expect(detail.permissions).toBe("Used by permission.");
   });
 
-  it("edits search tags on the Tags tab — comma-separated, cleaned, emitted, counted against 10", async () => {
+  it("edits search tags on the Tags tab — comma-separated, cleaned, emitted, stopped at 10", async () => {
     await mount(el);
     let detail: any = null;
     el.addEventListener("change", (e) => (detail = (e as CustomEvent).detail));
@@ -436,11 +436,41 @@ describe("<chord-sheet>", () => {
     await el.updateComplete;
     expect(input.value).toBe("yesu, Nadha");
 
-    input.value = Array.from({ length: 11 }, (_, i) => `t${i}`).join(",");
+    // Pasting 12 keeps the first 10.
+    input.value = Array.from({ length: 12 }, (_, i) => `t${i}`).join(",");
     input.dispatchEvent(new Event("input"));
     await el.updateComplete;
-    expect(el.tags).toHaveLength(11); // kept, so the host can refuse — not silently dropped
+    expect(el.tags).toEqual(Array.from({ length: 10 }, (_, i) => `t${i}`));
+    expect(detail.tags).toHaveLength(10);
+    expect(input.value).toBe(el.tags.join(", "));
     expect(el.shadowRoot!.querySelector(".tag-fields .field-note.warn")?.textContent).toContain("at most 10");
+
+    // At 10, typing an 11th is refused and the text stays as it was.
+    const before = input.value + ", ";
+    input.value = before;
+    input.dispatchEvent(new Event("input"));
+    await el.updateComplete;
+    input.value = before + "t10";
+    input.dispatchEvent(new Event("input"));
+    await el.updateComplete;
+    expect(input.value).toBe(before);
+    expect(el.tags).toHaveLength(10);
+
+    // Removing one clears the warning.
+    input.value = el.tags.slice(0, 9).join(", ");
+    input.dispatchEvent(new Event("input"));
+    await el.updateComplete;
+    expect(el.tags).toHaveLength(9);
+    expect(el.shadowRoot!.querySelector(".tag-fields .field-note.warn")).toBeNull();
+  });
+
+  it("flags more than 10 tags set by the host, rather than dropping them", async () => {
+    el.tags = Array.from({ length: 11 }, (_, i) => `t${i}`);
+    await mount(el);
+    [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>(".tab")].find((b) => b.textContent?.trim().startsWith("Tags"))!.click();
+    await el.updateComplete;
+    expect(el.tags).toHaveLength(11);
+    expect(el.shadowRoot!.querySelector(".tag-fields .field-note.warn")?.textContent).toContain("Remove 1");
   });
 
   it("shows tags set by the host and never prints them on the sheet", async () => {

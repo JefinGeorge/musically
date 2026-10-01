@@ -74,7 +74,8 @@ declare class ChordSheet extends LitElement {
     videoUrl: string;
     /**
      * Search tags — other ways people type the song ("yesu" for "Yeshu", "nadha" for "natha"), at most
-     * {@link MAX_SONG_TAGS}. Edited as one comma-separated line on the Tags tab; never shown on the sheet.
+     * {@link MAX_SONG_TAGS} — the Tags tab won't take more. Edited as one comma-separated line; never
+     * shown on the sheet. A host that sets more (old data) sees them flagged, not dropped.
      */
     tags: string[];
     /** Semitones to shift all chords. */
@@ -95,6 +96,8 @@ declare class ChordSheet extends LitElement {
     private tab;
     /** The Tags tab's text as typed — kept apart from `tags` so a trailing comma or space survives typing. */
     private tagsText;
+    /** Set when the last edit tried to go past MAX_SONG_TAGS and was stopped. */
+    private tagsCapped;
     /** Which transliteration tab is active (index into transliterations). */
     private xlitTab;
     static styles: lit.CSSResult;
