@@ -17,9 +17,9 @@ Musically ships as standard **Web Components**, so it drops into **React, Angula
 - **Multi-language & transliterations** — tag a sheet with its language, offer a language list, and attach alternate-script versions shown in their own tab. Each transliteration can credit its author via **Transliterated by** *(v2.4)*.
 - **Contributor credits** *(v2.4)* — credit a chords contributor via **Chords contributed by** in the Chords tab (shown only when the song has chords).
 - **Permissions & credits footer** *(v2.5)* — a **Permissions** tab collects `copyright`, `license`, and `permissions` lines; the reader renders a fine-print footer under the lyrics with each non-empty line — `Written by …`, `Composed by …`, then the copyright / permissions / license lines verbatim.
-- **Search tags** *(v2.7)* — a **Tags** tab collects up to 10 comma-separated search tags (`tags`) — other ways people type the song, e.g. `yesu` for *Yeshu*, `nadha` for *natha*. Never shown on the sheet; the host's search matches them. `parseTags()` cleans a typed list the same way.
 - **Video link** *(v2.6)* — collect an external video URL for a song (YouTube, Vimeo, or any other streaming platform) in the **Music** tab. Stored as a link, never an embed: the reader shows a **▶ Watch video** link and the mobile apps hand it to the phone.
-- **Performance & print views** — a clean, large reading layout for live use.
+- **Search tags** *(v2.7)* — a **Tags** tab collects up to 10 comma-separated search tags (`tags`) — other ways people type the song, e.g. `yesu` for *Yeshu*, `nadha` for *natha*. Never shown on the sheet; the host's search matches them. `parseTags()` cleans a typed list the same way.
+- **Reader mode** — set `readonly` to hide the editor and show only the sheet, with the credits footer and video link. The editor stacks into one column on narrow screens (≤ 720px).
 - **Themeable** — restyle everything through CSS custom properties.
 - **Headless core** — use the theory engine on its own, no UI required.
 
@@ -130,6 +130,42 @@ export class AppComponent {
 
 > Bind primitive values with `[attr.x]`. For large/structured input or to listen for changes, get an `ElementRef` and set properties / add an event listener directly.
 
+### A full editor — properties in, `change` out
+
+Strings and numbers can be attributes; lists (`languages`, `transliterations`, `tags`) are **properties only**, so set them from JavaScript. Every edit fires one `change` event carrying the whole song — save `event.detail` as it is.
+
+```html
+<chord-sheet id="song"></chord-sheet>
+
+<script type="module">
+  import 'musically/elements';
+
+  const sheet = document.getElementById('song');
+  Object.assign(sheet, {
+    title: 'Yeshu ninne',
+    language: 'ml',
+    languages: [{ code: 'ml', name: 'Malayalam' }, { code: 'ml-Latn', name: 'Malayalam (English letters)' }],
+    body: '# Verse 1\n[G]Yeshu ninne [C]njan sthuthikkum',
+    hasChords: true,
+    songKey: 'G',
+    author: 'Traditional',
+    videoUrl: 'https://youtu.be/dQw4w9WgXcQ',
+    tags: ['yesu', 'yeshuve'],
+    transliterations: [
+      { language: 'ml-Latn', title: 'Yeshu ninne', body: '...', transliteratedBy: 'A. Contributor' },
+    ],
+  });
+
+  sheet.addEventListener('change', (e) => {
+    const song = e.detail; // { body, title, ..., videoUrl, tags, transliterations }
+    save(song);
+  });
+
+  // Show the same song read-only (no editor, no tabs):
+  // sheet.readonly = true;
+</script>
+```
+
 ---
 
 ## Components
@@ -188,6 +224,28 @@ A single chord diagram, on its own.
 
 ---
 
+## Search tags *(v2.7)*
+
+People type the same song in different ways — *Yeshu* as `yesu`, *natha* as `nadha`. The **Tags** tab collects up to **10** of those spellings for a song so your search can find it however it's typed.
+
+- Type them on one line, separated by commas: `yesu, nadha, karthave`. The tab label shows the count — **Tags (3)** — and each tag appears as a chip.
+- Musically cleans the list as you type: spaces trimmed, empty entries and repeats (ignoring case) dropped, each tag cut to 40 characters. The text you're typing isn't rewritten until you leave the field.
+- More than 10 tags are **kept and flagged**, not silently dropped, so your app can refuse to save and tell the person which to remove. Check `detail.tags.length > MAX_SONG_TAGS`.
+- Tags are never shown on the sheet — they're for search only.
+
+Use the same cleaning on your server so the two never disagree:
+
+```js
+import { parseTags, MAX_SONG_TAGS } from 'musically';
+
+const tags = parseTags(req.body.tags);   // string "a, b" or string[]
+if (tags.length > MAX_SONG_TAGS) throw new Error(`At most ${MAX_SONG_TAGS} tags`);
+```
+
+A good search ranks a tag match **after** title matches and **before** credits and lyrics, so a song whose title starts with what was typed still comes first.
+
+---
+
 ## Headless core (no UI)
 
 Import just the music-theory functions if you want to build your own UI:
@@ -201,6 +259,7 @@ import {
   sectionTypeFromLabel,
   getDiagramSVG,
   normalizeVideoUrl,
+  parseTags,
 } from 'musically';
 
 transposeChord('Am7', 2);        // → "Bm7"
@@ -220,7 +279,12 @@ getDiagramSVG('G', 'guitar');          // → SVG markup string
 // returns null for anything that isn't an http(s) address.
 normalizeVideoUrl('youtu.be/dQw4w9WgXcQ'); // → "https://youtu.be/dQw4w9WgXcQ"
 normalizeVideoUrl('javascript:alert(1)');  // → null
+
+// Clean a typed list of search tags (see "Search tags").
+parseTags('yesu, Yesu ,nadha,,');          // → ["yesu", "nadha"]
 ```
+
+Also exported: `parseChord`, `transposeNote`, `qualityIntervals`, `getShape`, `parseLine`, `getChordsInSong`, the tables `SHARP_NOTES`, `SONG_KEYS`, `SECTION_TYPES`, `GUITAR_SHAPES`, `UKULELE_SHAPES`, the limits `MAX_SONG_TAGS` (10) and `MAX_TAG_LENGTH` (40), and the types `Instrument`, `SectionType`, `SheetLine`, `ChordSegment`, `ParsedChord`, `DiagramOptions`. From `musically/elements`: `ChordSheet`, `ChordDiagram`, `LanguageOption`, `Transliteration`.
 
 ---
 
@@ -237,6 +301,21 @@ chord-sheet {
   --musically-section-fill: 9%;  /* section background tint strength; 0% = border only */
 }
 ```
+
+| Property | Used for |
+|---|---|
+| `--musically-accent` | Chords, active tab underline, buttons |
+| `--musically-on-accent` | Text on accent-coloured buttons |
+| `--musically-root` | Root note in chord diagrams |
+| `--musically-paper` | Sheet and input background |
+| `--musically-text` | Lyrics and labels |
+| `--musically-muted` | Hints, credits footer, tag chips |
+| `--musically-border` | Field, tab and footer borders |
+| `--musically-warn` | Warnings (a video link that can't open, too many tags) |
+| `--musically-shadow` | Sheet shadow |
+| `--musically-font` | Sheet font |
+| `--musically-section-fill` | Section tint strength (`0%` = border only) |
+| `--musically-section-prechorus`, `--musically-section-bridge` | Tint colours for those section types |
 
 ---
 
@@ -257,16 +336,36 @@ Works in all evergreen browsers that support native Web Components (custom eleme
 
 ---
 
+## Changelog
+
+| Version | What changed |
+|---|---|
+| **2.7.0** | **Tags** tab — up to 10 comma-separated search tags (`tags`), emitted in `change`. `parseTags()`, `MAX_SONG_TAGS`, `MAX_TAG_LENGTH` exported. Dev tooling updated to vitest 4 (security advisories). |
+| 2.6.0 | **Video link** on the Music tab (`video-url`), shown as **▶ Watch video** in the reader. `normalizeVideoUrl()` exported. |
+| 2.5.0 | **Permissions** tab (`copyright`, `license`, `permissions`) and the credits footer under the lyrics. |
+| 2.4.x | Credit fields — **Transliterated by** on each transliteration, **Chords contributed by** on the Chords tab; Chords tab spacing. |
+| 2.3.x | Title on each transliteration; selected language and key restored on load. |
+| 2.2.0 | **Credits** and **Music** tabs, the `has-chords` flag (lyrics-only rendering), performance metadata, section background tints. |
+| 2.1.0 | Full song editor — section types, dropdowns, tabs, transliterations; theming and polish. |
+| 2.0.0 | Rewritten as Web Components (`<chord-sheet>`, `<chord-diagram>`) with a headless core. |
+
+---
+
 ## Contributing
 
-Issues and pull requests are welcome. To run locally:
+Issues and pull requests are welcome. To run locally (Node 20+ and npm 11 for development; the published package runs anywhere with Node 18+ or a modern browser):
 
 ```bash
 git clone https://github.com/JefinGeorge/Musically.git
 cd Musically
 npm install
-npm run dev
+npm run dev        # rebuild on change
+npm test           # vitest
+npm run typecheck
+npm run build      # dist/ — committed with each release
 ```
+
+To release: bump `version` in `package.json`, push to `master`, then publish a GitHub Release — the **Publish to npm** workflow builds and publishes it.
 
 ## License
 
