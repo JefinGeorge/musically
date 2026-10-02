@@ -340,8 +340,7 @@ Works in all evergreen browsers that support native Web Components (custom eleme
 
 | Version | What changed |
 |---|---|
-| **2.7.2** | Transliterations tab: the title takes the full row beside the language; **Transliterated by** moves to its own line. |
-| 2.7.1 | The Tags tab stops at 10 — an 11th tag can't be typed, and a pasted list keeps its first 10. |
+| **2.7.1** | The Tags tab stops at 10 — an 11th tag can't be typed, and a pasted list keeps its first 10. |
 | 2.7.0 | **Tags** tab — up to 10 comma-separated search tags (`tags`), emitted in `change`. `parseTags()`, `MAX_SONG_TAGS`, `MAX_TAG_LENGTH` exported. Dev tooling updated to vitest 4 (security advisories). |
 | 2.6.0 | **Video link** on the Music tab (`video-url`), shown as **▶ Watch video** in the reader. `normalizeVideoUrl()` exported. |
 | 2.5.0 | **Permissions** tab (`copyright`, `license`, `permissions`) and the credits footer under the lyrics. |

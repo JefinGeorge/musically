@@ -347,10 +347,7 @@ describe("<chord-sheet>", () => {
     translitTab.click();
     await el.updateComplete;
 
-    // On its own line under the title row (2.7.2), so the title gets the width.
-    const credit = el.shadowRoot!.querySelector<HTMLInputElement>(".translit-credit input.text-input")!;
-    expect(el.shadowRoot!.querySelector(".translit-head input.text-input")).toBeNull();
-    expect(el.shadowRoot!.querySelector(".translit-head input.title-input")).not.toBeNull();
+    const credit = el.shadowRoot!.querySelector<HTMLInputElement>("input.text-input")!;
     credit.value = "Jane Roe";
     credit.dispatchEvent(new Event("input"));
     await el.updateComplete;
