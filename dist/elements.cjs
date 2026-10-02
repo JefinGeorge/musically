@@ -506,6 +506,10 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
           Language
           ${this.renderLangSelect(active.language, (v) => this.updateTransliteration(activeIdx, { language: v }))}
         </label>
+        <button @click=${() => this.removeTransliteration(activeIdx)}>Remove</button>
+      </div>
+      <!-- Its own line, so the title above gets the width a transliterated title needs. -->
+      <div class="translit-credit">
         <label class="field grow">
           Transliterated by
           <input
@@ -515,8 +519,6 @@ exports.ChordSheet = class ChordSheet extends lit.LitElement {
             @input=${(e) => this.updateTransliteration(activeIdx, { transliteratedBy: e.target.value })}
           />
         </label>
-        <span class="spacer" style="margin-left:auto"></span>
-        <button @click=${() => this.removeTransliteration(activeIdx)}>Remove</button>
       </div>
       <div class="body split">
         <textarea
@@ -919,9 +921,25 @@ exports.ChordSheet.styles = lit.css`
 
     .translit-head {
       display: flex;
-      align-items: center;
+      align-items: flex-end;
       gap: 10px;
       margin-bottom: 10px;
+    }
+    /* The title takes every bit of the row the language picker and Remove don't need. */
+    .translit-head .field.grow {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    .translit-head .title-input {
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .translit-credit {
+      display: flex;
+      margin-bottom: 12px;
+    }
+    .translit-credit .field.grow {
+      flex: 0 1 420px;
     }
     .empty {
       color: var(--musically-muted, #8a8169);
